@@ -34,17 +34,18 @@ function createPriceIcon(price: number, isActive: boolean) {
       color: ${isActive ? "white" : "hsl(160, 60%, 28%)"};
       border: 2px solid ${isActive ? "hsl(160, 60%, 22%)" : "hsl(160, 60%, 28%)"};
       border-radius: 8px;
-      padding: 2px 8px;
+      padding: 3px 8px;
       font-size: 12px;
       font-weight: 700;
       white-space: nowrap;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       cursor: pointer;
-      transform: translate(-50%, -50%);
       font-family: system-ui, sans-serif;
+      line-height: 1;
+      display: inline-block;
     ">${label}</div>`,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
+    iconSize: [70, 24],
+    iconAnchor: [35, 12],
   });
 }
 
