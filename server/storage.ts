@@ -3,6 +3,7 @@ import Database from "better-sqlite3";
 import { eq, like, and, gte, lte, desc, or } from "drizzle-orm";
 import {
   users, listings, offers, walkthroughs, documents, messages, transactions, savedSearches, favorites,
+  chaperoneApplications, chaperonePayouts,
   type User, type InsertUser,
   type Listing, type InsertListing,
   type Offer, type InsertOffer,
@@ -12,6 +13,8 @@ import {
   type Transaction, type InsertTransaction,
   type SavedSearch, type InsertSavedSearch,
   type Favorite, type InsertFavorite,
+  type ChaperoneApplication, type InsertChaperoneApplication,
+  type ChaperonePayout, type InsertChaperonePayout,
 } from "@shared/schema";
 
 const sqlite = new Database("data.db");
@@ -133,6 +136,50 @@ sqlite.exec(`
     listing_id INTEGER NOT NULL,
     created_at TEXT NOT NULL DEFAULT ''
   );
+  CREATE TABLE IF NOT EXISTS chaperone_applications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    address TEXT NOT NULL,
+    city TEXT NOT NULL,
+    state TEXT NOT NULL,
+    zip TEXT NOT NULL,
+    latitude REAL,
+    longitude REAL,
+    date_of_birth TEXT NOT NULL,
+    ssn TEXT NOT NULL,
+    drivers_license TEXT NOT NULL,
+    has_realtor_license INTEGER DEFAULT 0,
+    realtor_license_number TEXT,
+    has_vehicle INTEGER DEFAULT 0,
+    max_travel_miles INTEGER DEFAULT 15,
+    availability TEXT NOT NULL DEFAULT '[]',
+    background_check_status TEXT DEFAULT 'not_started',
+    background_check_date TEXT,
+    bank_account_name TEXT,
+    bank_routing_number TEXT,
+    bank_account_number TEXT,
+    bank_account_type TEXT DEFAULT 'checking',
+    agreed_to_terms INTEGER DEFAULT 0,
+    agreed_to_terms_date TEXT,
+    completed_training INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT ''
+  );
+  CREATE TABLE IF NOT EXISTS chaperone_payouts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chaperone_id INTEGER NOT NULL,
+    walkthrough_id INTEGER,
+    amount REAL NOT NULL,
+    type TEXT NOT NULL DEFAULT 'earning',
+    status TEXT NOT NULL DEFAULT 'pending',
+    description TEXT NOT NULL,
+    bank_last4 TEXT,
+    created_at TEXT NOT NULL DEFAULT ''
+  );
 `);
 
 export const db = drizzle(sqlite);
@@ -211,6 +258,19 @@ export interface IStorage {
   addFavorite(fav: InsertFavorite): Favorite;
   removeFavorite(userId: number, listingId: number): void;
   isFavorite(userId: number, listingId: number): boolean;
+
+  // Chaperone Applications
+  getChaperoneApplication(id: number): ChaperoneApplication | undefined;
+  getChaperoneApplicationByUser(userId: number): ChaperoneApplication | undefined;
+  createChaperoneApplication(app: InsertChaperoneApplication): ChaperoneApplication;
+  updateChaperoneApplication(id: number, data: Partial<InsertChaperoneApplication>): ChaperoneApplication | undefined;
+  getApprovedChaperones(): ChaperoneApplication[];
+
+  // Chaperone Payouts
+  getChaperonePayouts(chaperoneId: number): ChaperonePayout[];
+  createChaperonePayout(payout: InsertChaperonePayout): ChaperonePayout;
+  updateChaperonePayout(id: number, data: Partial<InsertChaperonePayout>): ChaperonePayout | undefined;
+  getChaperoneEarnings(chaperoneId: number): { total: number; pending: number; paid: number };
 }
 
 export class DatabaseStorage implements IStorage {
@@ -417,6 +477,58 @@ export class DatabaseStorage implements IStorage {
   isFavorite(userId: number, listingId: number): boolean {
     const result = db.select().from(favorites).where(and(eq(favorites.userId, userId), eq(favorites.listingId, listingId))).get();
     return !!result;
+  }
+
+  // ── Chaperone Applications ──
+  getChaperoneApplication(id: number): ChaperoneApplication | undefined {
+    return db.select().from(chaperoneApplications).where(eq(chaperoneApplications.id, id)).get();
+  }
+
+  getChaperoneApplicationByUser(userId: number): ChaperoneApplication | undefined {
+    return db.select().from(chaperoneApplications).where(eq(chaperoneApplications.userId, userId)).get();
+  }
+
+  createChaperoneApplication(app: InsertChaperoneApplication): ChaperoneApplication {
+    return db.insert(chaperoneApplications).values({ ...app, createdAt: new Date().toISOString() }).returning().get();
+  }
+
+  updateChaperoneApplication(id: number, data: Partial<InsertChaperoneApplication>): ChaperoneApplication | undefined {
+    return db.update(chaperoneApplications).set(data).where(eq(chaperoneApplications.id, id)).returning().get();
+  }
+
+  getApprovedChaperones(): ChaperoneApplication[] {
+    return db.select().from(chaperoneApplications).where(eq(chaperoneApplications.status, "approved")).all();
+  }
+
+  // ── Chaperone Payouts ──
+  getChaperonePayouts(chaperoneId: number): ChaperonePayout[] {
+    return db.select().from(chaperonePayouts).where(eq(chaperonePayouts.chaperoneId, chaperoneId)).orderBy(desc(chaperonePayouts.createdAt)).all();
+  }
+
+  createChaperonePayout(payout: InsertChaperonePayout): ChaperonePayout {
+    return db.insert(chaperonePayouts).values({ ...payout, createdAt: new Date().toISOString() }).returning().get();
+  }
+
+  updateChaperonePayout(id: number, data: Partial<InsertChaperonePayout>): ChaperonePayout | undefined {
+    return db.update(chaperonePayouts).set(data).where(eq(chaperonePayouts.id, id)).returning().get();
+  }
+
+  getChaperoneEarnings(chaperoneId: number): { total: number; pending: number; paid: number } {
+    const payouts = db.select().from(chaperonePayouts).where(eq(chaperonePayouts.chaperoneId, chaperoneId)).all();
+    let total = 0;
+    let pending = 0;
+    let paid = 0;
+    for (const p of payouts) {
+      if (p.type === "earning") {
+        total += p.amount;
+        if (p.status === "completed") paid += p.amount;
+        else if (p.status === "pending" || p.status === "processing") pending += p.amount;
+      } else if (p.type === "payout") {
+        // negative: withdrawal reduces paid
+        paid += p.amount; // amount is negative for withdrawals
+      }
+    }
+    return { total, pending, paid };
   }
 }
 

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertListingSchema, insertOfferSchema, insertWalkthroughSchema, insertDocumentSchema, insertMessageSchema, insertTransactionSchema, insertSavedSearchSchema, insertFavoriteSchema } from "@shared/schema";
+import { insertUserSchema, insertListingSchema, insertOfferSchema, insertWalkthroughSchema, insertDocumentSchema, insertMessageSchema, insertTransactionSchema, insertSavedSearchSchema, insertFavoriteSchema, insertChaperoneApplicationSchema, insertChaperonePayoutSchema } from "@shared/schema";
 import { z } from "zod";
 
 // Seed data on first load
@@ -150,6 +150,68 @@ function seedDatabase() {
   // Create demo messages for offer negotiation
   storage.createMessage({ offerId: 1, senderId: buyer1.id, senderType: "user", content: "We'd like to offer $560,000 for the Craftsman bungalow. We're pre-approved and flexible on closing." });
   storage.createMessage({ offerId: 1, senderId: null, senderType: "ai", content: "I've submitted your offer of $560,000 to the seller. The listing price is $585,000, so you're offering about 4.3% below asking. I'll keep you updated on the seller's response. In the meantime, would you like me to prepare any contingency clauses?" });
+
+  // Create chaperone application for lisa@example.com (user id 4)
+  storage.createChaperoneApplication({
+    userId: chaperone1.id,
+    status: "approved",
+    firstName: "Lisa",
+    lastName: "Rodriguez",
+    email: "lisa@example.com",
+    phone: "813-555-0404",
+    address: "4210 W Cass St",
+    city: "Tampa",
+    state: "FL",
+    zip: "33609",
+    latitude: 27.9398,
+    longitude: -82.4944,
+    dateOfBirth: "1988-03-15",
+    ssn: "1234",
+    driversLicense: "FL-G12345678",
+    hasRealtorLicense: true,
+    realtorLicenseNumber: "FL-RE-3047821",
+    hasVehicle: true,
+    maxTravelMiles: 25,
+    availability: JSON.stringify(["weekdays", "weekends", "evenings"]),
+    backgroundCheckStatus: "passed",
+    backgroundCheckDate: "2026-03-01",
+    bankAccountName: "Lisa Rodriguez",
+    bankRoutingNumber: "021000021",
+    bankAccountNumber: "4532109876",
+    bankAccountType: "checking",
+    agreedToTerms: true,
+    agreedToTermsDate: "2026-03-01",
+    completedTraining: true,
+  });
+
+  // Create demo chaperone payouts for lisa
+  storage.createChaperonePayout({
+    chaperoneId: chaperone1.id,
+    walkthroughId: 1,
+    amount: 20,
+    type: "earning",
+    status: "completed",
+    description: "Walkthrough showing at 1842 Bayshore Blvd",
+    bankLast4: "9876",
+  });
+  storage.createChaperonePayout({
+    chaperoneId: chaperone1.id,
+    walkthroughId: null,
+    amount: 20,
+    type: "earning",
+    status: "completed",
+    description: "Walkthrough showing at 725 15th Ave NE",
+    bankLast4: "9876",
+  });
+  storage.createChaperonePayout({
+    chaperoneId: chaperone1.id,
+    walkthroughId: null,
+    amount: -30,
+    type: "payout",
+    status: "completed",
+    description: "Bank transfer payout",
+    bankLast4: "9876",
+  });
 }
 
 export function registerRoutes(server: Server, app: Express) {
@@ -514,5 +576,166 @@ export function registerRoutes(server: Server, app: Express) {
       platformFee: "1%",
       chaperoneRate: "$20/walkthrough"
     });
+  });
+
+  // ── Chaperone Application Routes ──
+  app.post("/api/chaperone/apply", (req, res) => {
+    try {
+      const data = insertChaperoneApplicationSchema.parse({ ...req.body, status: "pending" });
+      // Check if user already has an application
+      const existing = storage.getChaperoneApplicationByUser(data.userId);
+      if (existing) {
+        return res.status(400).json({ message: "Application already exists for this user" });
+      }
+      const app_ = storage.createChaperoneApplication(data);
+      res.json(app_);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.get("/api/chaperone/application/:userId", (req, res) => {
+    const app_ = storage.getChaperoneApplicationByUser(parseInt(req.params.userId));
+    if (!app_) return res.status(404).json({ message: "Application not found" });
+    res.json(app_);
+  });
+
+  app.patch("/api/chaperone/application/:id", (req, res) => {
+    const app_ = storage.updateChaperoneApplication(parseInt(req.params.id), req.body);
+    if (!app_) return res.status(404).json({ message: "Application not found" });
+    res.json(app_);
+  });
+
+  app.post("/api/chaperone/application/:id/background-check", (req, res) => {
+    const id = parseInt(req.params.id);
+    const app_ = storage.getChaperoneApplication(id);
+    if (!app_) return res.status(404).json({ message: "Application not found" });
+
+    // Start background check
+    storage.updateChaperoneApplication(id, {
+      status: "background_check",
+      backgroundCheckStatus: "processing",
+    });
+
+    // Simulate check passing after 2 seconds
+    setTimeout(() => {
+      storage.updateChaperoneApplication(id, {
+        status: "approved",
+        backgroundCheckStatus: "passed",
+        backgroundCheckDate: new Date().toISOString().split("T")[0],
+      });
+      // Update user role to chaperone
+      storage.updateUser(app_.userId, { role: "chaperone" });
+    }, 2000);
+
+    res.json({ message: "Background check initiated", status: "processing" });
+  });
+
+  app.get("/api/chaperone/available-gigs/:chaperoneId", (req, res) => {
+    const walkthroughs = storage.getAvailableWalkthroughs();
+    const gigs = walkthroughs.map(w => {
+      const listing = storage.getListing(w.listingId);
+      return { ...w, listing: listing || null };
+    });
+    res.json(gigs);
+  });
+
+  app.post("/api/chaperone/accept-gig/:walkthroughId", (req, res) => {
+    const walkthroughId = parseInt(req.params.walkthroughId);
+    const { chaperoneId } = req.body;
+    if (!chaperoneId) return res.status(400).json({ message: "chaperoneId required" });
+
+    const walkthrough = storage.updateWalkthrough(walkthroughId, {
+      chaperoneId,
+      status: "assigned",
+    });
+    if (!walkthrough) return res.status(404).json({ message: "Walkthrough not found" });
+
+    // Get chaperone application for bank info
+    const chaperoneApp = storage.getChaperoneApplicationByUser(chaperoneId);
+    const bankLast4 = chaperoneApp?.bankAccountNumber
+      ? chaperoneApp.bankAccountNumber.slice(-4)
+      : null;
+
+    // Create earning payout record
+    storage.createChaperonePayout({
+      chaperoneId,
+      walkthroughId,
+      amount: 20,
+      type: "earning",
+      status: "pending",
+      description: `Walkthrough showing at ${storage.getListing(walkthrough.listingId)?.address || "property"}`,
+      bankLast4,
+    });
+
+    const listing = storage.getListing(walkthrough.listingId);
+    res.json({ ...walkthrough, listing: listing || null });
+  });
+
+  app.post("/api/chaperone/complete-gig/:walkthroughId", (req, res) => {
+    const walkthroughId = parseInt(req.params.walkthroughId);
+    const walkthrough = storage.updateWalkthrough(walkthroughId, { status: "completed" });
+    if (!walkthrough) return res.status(404).json({ message: "Walkthrough not found" });
+
+    // Update related payout to completed
+    if (walkthrough.chaperoneId) {
+      const payouts = storage.getChaperonePayouts(walkthrough.chaperoneId);
+      const relatedPayout = payouts.find(p => p.walkthroughId === walkthroughId);
+      if (relatedPayout) {
+        storage.updateChaperonePayout(relatedPayout.id, { status: "completed" });
+      }
+    }
+
+    res.json({ success: true, walkthrough });
+  });
+
+  app.post("/api/chaperone/decline-gig/:walkthroughId", (_req, res) => {
+    res.json({ success: true });
+  });
+
+  app.get("/api/chaperone/my-gigs/:chaperoneId", (req, res) => {
+    const chaperoneId = parseInt(req.params.chaperoneId);
+    const walkthroughs = storage.getWalkthroughsByChaperone(chaperoneId);
+    const gigs = walkthroughs.map(w => {
+      const listing = storage.getListing(w.listingId);
+      return { ...w, listing: listing || null };
+    });
+    res.json(gigs);
+  });
+
+  app.get("/api/chaperone/earnings/:chaperoneId", (req, res) => {
+    const chaperoneId = parseInt(req.params.chaperoneId);
+    const earnings = storage.getChaperoneEarnings(chaperoneId);
+    const payouts = storage.getChaperonePayouts(chaperoneId);
+    res.json({ ...earnings, payouts });
+  });
+
+  app.post("/api/chaperone/request-payout", (req, res) => {
+    try {
+      const { chaperoneId, amount, bankLast4 } = req.body;
+      if (!chaperoneId || !amount) return res.status(400).json({ message: "chaperoneId and amount required" });
+
+      const earnings = storage.getChaperoneEarnings(chaperoneId);
+      const available = earnings.paid + earnings.pending; // total earned minus already withdrawn
+      // Recalculate available balance properly
+      const payouts = storage.getChaperonePayouts(chaperoneId);
+      const totalEarned = payouts.filter(p => p.type === "earning" && p.status === "completed").reduce((s, p) => s + p.amount, 0);
+      const totalWithdrawn = Math.abs(payouts.filter(p => p.type === "payout" && p.status === "completed").reduce((s, p) => s + p.amount, 0));
+      const balance = totalEarned - totalWithdrawn;
+
+      if (amount > balance) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+
+      const payout = storage.createChaperonePayout({
+        chaperoneId,
+        walkthroughId: undefined,
+        amount: -Math.abs(amount), // negative for withdrawals
+        type: "payout",
+        status: "processing",
+        description: "Bank transfer payout",
+        bankLast4: bankLast4 || null,
+      });
+
+      res.json(payout);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
   });
 }

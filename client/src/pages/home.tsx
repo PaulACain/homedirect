@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ListingCard } from "@/components/listing-card";
-import { Search, Bot, DollarSign, Users, FileCheck, ArrowRight, Shield, Clock, Sparkles, MapPin } from "lucide-react";
+import { Search, Bot, DollarSign, Users, FileCheck, ArrowRight, Shield, Clock, Sparkles, MapPin, UserCheck } from "lucide-react";
 import type { Listing } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -65,6 +65,28 @@ export default function Home() {
               <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
               <span>$20 walkthrough chaperones</span>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Chaperone Banner */}
+      <section className="bg-primary/5 border-b" data-testid="section-chaperone-banner">
+        <div className="mx-auto max-w-7xl px-4 py-8">
+          <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="rounded-full bg-primary/10 p-3">
+                <UserCheck className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold">Earn $20 Per Showing</h2>
+                <p className="text-xs text-muted-foreground">Become a HomeDirectAI showing chaperone. Flexible hours, instant pay.</p>
+              </div>
+            </div>
+            <Link href="/chaperone-apply">
+              <Button size="sm" variant="default" className="whitespace-nowrap" data-testid="button-chaperone-apply-banner">
+                Apply Now <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

@@ -14,6 +14,8 @@ import Sell from "@/pages/sell";
 import Dashboard from "@/pages/dashboard";
 import Negotiate from "@/pages/negotiate";
 import MapSearch from "@/pages/map-search";
+import ChaperoneApply from "@/pages/chaperone-apply";
+import ChaperoneDashboard from "@/pages/chaperone-dashboard";
 import NotFound from "@/pages/not-found";
 
 function AppRouter() {
@@ -26,6 +28,8 @@ function AppRouter() {
       <Route path="/sell" component={Sell} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/negotiate/:id" component={Negotiate} />
+      <Route path="/chaperone-apply" component={ChaperoneApply} />
+      <Route path="/chaperone-dashboard" component={ChaperoneDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

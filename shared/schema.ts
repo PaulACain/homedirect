@@ -169,3 +169,59 @@ export const favorites = sqliteTable("favorites", {
 export const insertFavoriteSchema = createInsertSchema(favorites).omit({ id: true, createdAt: true });
 export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
 export type Favorite = typeof favorites.$inferSelect;
+
+// ── Chaperone Applications ──────────────────────────────────────────
+export const chaperoneApplications = sqliteTable("chaperone_applications", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  status: text("status").notNull().default("pending"), // pending | background_check | approved | rejected
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone").notNull(),
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  zip: text("zip").notNull(),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  dateOfBirth: text("date_of_birth").notNull(),
+  ssn: text("ssn").notNull(), // last 4 digits only for display, full stored encrypted (dummy)
+  driversLicense: text("drivers_license").notNull(),
+  hasRealtorLicense: integer("has_realtor_license", { mode: "boolean" }).default(false),
+  realtorLicenseNumber: text("realtor_license_number"),
+  hasVehicle: integer("has_vehicle", { mode: "boolean" }).default(false),
+  maxTravelMiles: integer("max_travel_miles").default(15),
+  availability: text("availability").notNull().default("[]"), // JSON: ["weekdays","weekends","evenings"]
+  backgroundCheckStatus: text("background_check_status").default("not_started"), // not_started | processing | passed | failed
+  backgroundCheckDate: text("background_check_date"),
+  bankAccountName: text("bank_account_name"),
+  bankRoutingNumber: text("bank_routing_number"),
+  bankAccountNumber: text("bank_account_number"),
+  bankAccountType: text("bank_account_type").default("checking"), // checking | savings
+  agreedToTerms: integer("agreed_to_terms", { mode: "boolean" }).default(false),
+  agreedToTermsDate: text("agreed_to_terms_date"),
+  completedTraining: integer("completed_training", { mode: "boolean" }).default(false),
+  createdAt: text("created_at").notNull().default(""),
+});
+
+export const insertChaperoneApplicationSchema = createInsertSchema(chaperoneApplications).omit({ id: true, createdAt: true });
+export type InsertChaperoneApplication = z.infer<typeof insertChaperoneApplicationSchema>;
+export type ChaperoneApplication = typeof chaperoneApplications.$inferSelect;
+
+// ── Chaperone Payouts ──────────────────────────────────────────────
+export const chaperonePayouts = sqliteTable("chaperone_payouts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  chaperoneId: integer("chaperone_id").notNull(),
+  walkthroughId: integer("walkthrough_id"), // null for manual payouts
+  amount: real("amount").notNull(),
+  type: text("type").notNull().default("earning"), // earning | payout | bonus
+  status: text("status").notNull().default("pending"), // pending | processing | completed | failed
+  description: text("description").notNull(),
+  bankLast4: text("bank_last4"),
+  createdAt: text("created_at").notNull().default(""),
+});
+
+export const insertChaperonePayoutSchema = createInsertSchema(chaperonePayouts).omit({ id: true, createdAt: true });
+export type InsertChaperonePayout = z.infer<typeof insertChaperonePayoutSchema>;
+export type ChaperonePayout = typeof chaperonePayouts.$inferSelect;
