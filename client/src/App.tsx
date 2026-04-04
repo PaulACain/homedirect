@@ -17,6 +17,12 @@ import MapSearch from "@/pages/map-search";
 import ChaperoneApply from "@/pages/chaperone-apply";
 import ChaperoneDashboard from "@/pages/chaperone-dashboard";
 import TransactionPage from "@/pages/transaction";
+import TransactionHub from "@/pages/transaction-hub";
+import PortalInspection from "@/pages/portal-inspection";
+import PortalEscrow from "@/pages/portal-escrow";
+import PortalLender from "@/pages/portal-lender";
+import PortalAppraisal from "@/pages/portal-appraisal";
+import PortalTitle from "@/pages/portal-title";
 import EditListing from "@/pages/edit-listing";
 import AdminDashboard from "@/pages/admin";
 import NotFound from "@/pages/not-found";
@@ -33,7 +39,12 @@ function AppRouter() {
       <Route path="/negotiate/:id" component={Negotiate} />
       <Route path="/chaperone-apply" component={ChaperoneApply} />
       <Route path="/chaperone-dashboard" component={ChaperoneDashboard} />
-      <Route path="/transaction/:id" component={TransactionPage} />
+      <Route path="/transaction/:id/inspection" component={PortalInspection} />
+      <Route path="/transaction/:id/escrow" component={PortalEscrow} />
+      <Route path="/transaction/:id/lender" component={PortalLender} />
+      <Route path="/transaction/:id/appraisal" component={PortalAppraisal} />
+      <Route path="/transaction/:id/title" component={PortalTitle} />
+      <Route path="/transaction/:id" component={TransactionHub} />
       <Route path="/edit-listing/:id" component={EditListing} />
       <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />

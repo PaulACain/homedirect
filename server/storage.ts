@@ -4,6 +4,7 @@ import { eq, like, and, gte, lte, desc, asc, or } from "drizzle-orm";
 import {
   users, listings, offers, walkthroughs, documents, messages, transactions, savedSearches, favorites,
   chaperoneApplications, chaperonePayouts, payments, notifications,
+  transactionChecklist, portalMessages, portalDocuments,
   type User, type InsertUser,
   type Listing, type InsertListing,
   type Offer, type InsertOffer,
@@ -17,6 +18,9 @@ import {
   type ChaperonePayout, type InsertChaperonePayout,
   type Payment, type InsertPayment,
   type Notification, type InsertNotification,
+  type TransactionChecklist, type InsertTransactionChecklist,
+  type PortalMessage, type InsertPortalMessage,
+  type PortalDocument, type InsertPortalDocument,
 } from "@shared/schema";
 
 const sqlite = new Database("data.db");
@@ -204,6 +208,38 @@ sqlite.exec(`
     related_url TEXT,
     created_at TEXT DEFAULT ''
   );
+  CREATE TABLE IF NOT EXISTS transaction_checklist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    transaction_id INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    category TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    due_date TEXT,
+    "order" INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT ''
+  );
+  CREATE TABLE IF NOT EXISTS portal_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    transaction_id INTEGER NOT NULL,
+    portal TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TEXT DEFAULT ''
+  );
+  CREATE TABLE IF NOT EXISTS portal_documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    transaction_id INTEGER NOT NULL,
+    portal TEXT NOT NULL,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    file_url TEXT,
+    status TEXT NOT NULL DEFAULT 'requested',
+    uploaded_by INTEGER,
+    created_at TEXT DEFAULT ''
+  );
 `);
 
 
@@ -312,6 +348,21 @@ export interface IStorage {
   getNotificationsByUser(userId: number): Notification[];
   markNotificationRead(id: number): Notification | undefined;
   getUnreadCount(userId: number): number;
+
+  // Transaction Checklist
+  getChecklist(transactionId: number): TransactionChecklist[];
+  getChecklistByRole(transactionId: number, role: string): TransactionChecklist[];
+  createChecklistItem(item: InsertTransactionChecklist): TransactionChecklist;
+  updateChecklistItem(id: number, data: Partial<InsertTransactionChecklist>): TransactionChecklist | undefined;
+
+  // Portal Messages
+  getPortalMessages(transactionId: number, portal: string): PortalMessage[];
+  createPortalMessage(msg: InsertPortalMessage): PortalMessage;
+
+  // Portal Documents
+  getPortalDocuments(transactionId: number, portal?: string): PortalDocument[];
+  createPortalDocument(doc: InsertPortalDocument): PortalDocument;
+  updatePortalDocument(id: number, data: Partial<InsertPortalDocument>): PortalDocument | undefined;
 
   // Admin
   getAllUsers(): User[];
@@ -655,6 +706,48 @@ export class DatabaseStorage implements IStorage {
   getUnreadCount(userId: number): number {
     const rows = db.select().from(notifications).where(and(eq(notifications.userId, userId), eq(notifications.read, 0))).all();
     return rows.length;
+  }
+
+  // ── Transaction Checklist ──
+  getChecklist(transactionId: number): TransactionChecklist[] {
+    return db.select().from(transactionChecklist).where(eq(transactionChecklist.transactionId, transactionId)).orderBy(asc(transactionChecklist.order)).all();
+  }
+
+  getChecklistByRole(transactionId: number, role: string): TransactionChecklist[] {
+    return db.select().from(transactionChecklist).where(and(eq(transactionChecklist.transactionId, transactionId), eq(transactionChecklist.role, role))).orderBy(asc(transactionChecklist.order)).all();
+  }
+
+  createChecklistItem(item: InsertTransactionChecklist): TransactionChecklist {
+    return db.insert(transactionChecklist).values({ ...item, createdAt: new Date().toISOString() }).returning().get();
+  }
+
+  updateChecklistItem(id: number, data: Partial<InsertTransactionChecklist>): TransactionChecklist | undefined {
+    return db.update(transactionChecklist).set(data).where(eq(transactionChecklist.id, id)).returning().get();
+  }
+
+  // ── Portal Messages ──
+  getPortalMessages(transactionId: number, portal: string): PortalMessage[] {
+    return db.select().from(portalMessages).where(and(eq(portalMessages.transactionId, transactionId), eq(portalMessages.portal, portal))).orderBy(asc(portalMessages.createdAt)).all();
+  }
+
+  createPortalMessage(msg: InsertPortalMessage): PortalMessage {
+    return db.insert(portalMessages).values({ ...msg, createdAt: new Date().toISOString() }).returning().get();
+  }
+
+  // ── Portal Documents ──
+  getPortalDocuments(transactionId: number, portal?: string): PortalDocument[] {
+    if (portal) {
+      return db.select().from(portalDocuments).where(and(eq(portalDocuments.transactionId, transactionId), eq(portalDocuments.portal, portal))).orderBy(asc(portalDocuments.createdAt)).all();
+    }
+    return db.select().from(portalDocuments).where(eq(portalDocuments.transactionId, transactionId)).orderBy(asc(portalDocuments.createdAt)).all();
+  }
+
+  createPortalDocument(doc: InsertPortalDocument): PortalDocument {
+    return db.insert(portalDocuments).values({ ...doc, createdAt: new Date().toISOString() }).returning().get();
+  }
+
+  updatePortalDocument(id: number, data: Partial<InsertPortalDocument>): PortalDocument | undefined {
+    return db.update(portalDocuments).set(data).where(eq(portalDocuments.id, id)).returning().get();
   }
 
   // ── Admin ──

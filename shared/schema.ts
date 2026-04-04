@@ -259,3 +259,53 @@ export const notifications = sqliteTable("notifications", {
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+
+// ── Transaction Checklist ────────────────────────────────────────────────
+export const transactionChecklist = sqliteTable("transaction_checklist", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  transactionId: integer("transaction_id").notNull(),
+  role: text("role").notNull(), // "buyer" or "seller"
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(), // "inspection", "lender", "escrow", "title", "appraisal", "general"
+  status: text("status").notNull().default("pending"), // pending, in_progress, completed
+  dueDate: text("due_date"),
+  order: integer("order").notNull().default(0),
+  createdAt: text("created_at").default(""),
+});
+
+export const insertTransactionChecklistSchema = createInsertSchema(transactionChecklist).omit({ id: true, createdAt: true });
+export type InsertTransactionChecklist = z.infer<typeof insertTransactionChecklistSchema>;
+export type TransactionChecklist = typeof transactionChecklist.$inferSelect;
+
+// ── Portal Messages ──────────────────────────────────────────────────────
+export const portalMessages = sqliteTable("portal_messages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  transactionId: integer("transaction_id").notNull(),
+  portal: text("portal").notNull(), // "inspection", "escrow", "lender", "appraisal", "title", "general"
+  userId: integer("user_id").notNull(),
+  role: text("role").notNull(), // "user" or "ai"
+  content: text("content").notNull(),
+  createdAt: text("created_at").default(""),
+});
+
+export const insertPortalMessageSchema = createInsertSchema(portalMessages).omit({ id: true, createdAt: true });
+export type InsertPortalMessage = z.infer<typeof insertPortalMessageSchema>;
+export type PortalMessage = typeof portalMessages.$inferSelect;
+
+// ── Portal Documents ─────────────────────────────────────────────────────
+export const portalDocuments = sqliteTable("portal_documents", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  transactionId: integer("transaction_id").notNull(),
+  portal: text("portal").notNull(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // "inspection_report", "id_document", "insurance", "pay_stub", etc.
+  fileUrl: text("file_url"),
+  status: text("status").notNull().default("requested"), // requested, uploaded, approved, rejected
+  uploadedBy: integer("uploaded_by"),
+  createdAt: text("created_at").default(""),
+});
+
+export const insertPortalDocumentSchema = createInsertSchema(portalDocuments).omit({ id: true, createdAt: true });
+export type InsertPortalDocument = z.infer<typeof insertPortalDocumentSchema>;
+export type PortalDocument = typeof portalDocuments.$inferSelect;

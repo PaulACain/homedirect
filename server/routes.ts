@@ -283,6 +283,192 @@ function seedDatabase() {
     description: "Bank transfer payout",
     bankLast4: "9876",
   });
+
+  // ── Seed Transaction Portal Data ──
+  // Accept the offer and create a transaction for the Craftsman Bungalow
+  storage.updateOffer(1, { status: "accepted" });
+
+  // Create a transaction (listing 3 is the Craftsman Bungalow at $585,000)
+  const salePrice = 560000;
+  const txn = storage.createTransaction({
+    listingId: 3,
+    offerId: 1,
+    buyerId: buyer1.id,
+    sellerId: seller2.id,
+    salePrice,
+    platformFee: Math.round(salePrice * 0.01),
+    status: "in_progress",
+    closingDate: "2026-05-15",
+    escrowStatus: "opened",
+    titleStatus: "ordered",
+    inspectionStatus: "in_progress",
+    appraisalStatus: "not_started",
+  });
+
+  // Seed buyer checklist items (some completed/in_progress)
+  const addDays = (d: number) => {
+    const dt = new Date("2026-04-04");
+    dt.setDate(dt.getDate() + d);
+    return dt.toISOString().split("T")[0];
+  };
+
+  const buyerItems = [
+    { title: "Get mortgage pre-approval", description: "Contact your lender and submit pre-approval documentation", category: "lender", order: 1, dueDate: addDays(3), status: "completed" },
+    { title: "Schedule home inspection", description: "Book an inspector within 10 days of contract", category: "inspection", order: 2, dueDate: addDays(10), status: "completed" },
+    { title: "Review inspection report", description: "AI will analyze findings when uploaded", category: "inspection", order: 3, dueDate: addDays(14), status: "in_progress" },
+    { title: "Request repairs or credits", description: "Based on inspection findings", category: "inspection", order: 4, dueDate: addDays(16), status: "pending" },
+    { title: "Complete mortgage application", description: "Submit full application to your lender", category: "lender", order: 5, dueDate: addDays(7), status: "in_progress" },
+    { title: "Order homeowner's insurance", description: "Required before closing", category: "general", order: 6, dueDate: addDays(20), status: "pending" },
+    { title: "Schedule appraisal", description: "Your lender will order this", category: "appraisal", order: 7, dueDate: addDays(14), status: "pending" },
+    { title: "Review appraisal report", description: "AI will analyze the valuation", category: "appraisal", order: 8, dueDate: addDays(18), status: "pending" },
+    { title: "Review closing disclosure", description: "Review 3 days before closing (required by law)", category: "escrow", order: 9, dueDate: addDays(27), status: "pending" },
+    { title: "Wire closing funds", description: "Send funds to escrow per wire instructions", category: "escrow", order: 10, dueDate: addDays(29), status: "pending" },
+    { title: "Final walkthrough", description: "Schedule via the platform", category: "general", order: 11, dueDate: addDays(29), status: "pending" },
+    { title: "Attend closing", description: "Sign final documents and get your keys", category: "general", order: 12, dueDate: addDays(30), status: "pending" },
+  ];
+
+  const sellerItems = [
+    { title: "Complete seller disclosure", description: "Fill out property condition disclosure", category: "title", order: 1, dueDate: addDays(3), status: "completed" },
+    { title: "Provide access for inspection", description: "Schedule access for buyer's inspector", category: "inspection", order: 2, dueDate: addDays(10), status: "completed" },
+    { title: "Review inspection requests", description: "Respond to buyer's repair/credit requests", category: "inspection", order: 3, dueDate: addDays(16), status: "pending" },
+    { title: "Provide access for appraisal", description: "Schedule access for appraiser", category: "appraisal", order: 4, dueDate: addDays(14), status: "pending" },
+    { title: "Gather required documents", description: "Title, deed, HOA docs, tax records", category: "title", order: 5, dueDate: addDays(7), status: "in_progress" },
+    { title: "Review title report", description: "Ensure no liens or encumbrances", category: "title", order: 6, dueDate: addDays(21), status: "pending" },
+    { title: "Upload ID for title company", description: "Driver's license or passport", category: "title", order: 7, dueDate: addDays(14), status: "pending" },
+    { title: "Review closing disclosure", description: "Review 3 days before closing", category: "escrow", order: 8, dueDate: addDays(27), status: "pending" },
+    { title: "Prepare for final walkthrough", description: "Ensure property is in agreed condition", category: "general", order: 9, dueDate: addDays(29), status: "pending" },
+    { title: "Attend closing", description: "Sign final documents and transfer ownership", category: "general", order: 10, dueDate: addDays(30), status: "pending" },
+  ];
+
+  for (const item of buyerItems) {
+    storage.createChecklistItem({ transactionId: txn.id, role: "buyer", ...item });
+  }
+  for (const item of sellerItems) {
+    storage.createChecklistItem({ transactionId: txn.id, role: "seller", ...item });
+  }
+
+  // Seed portal documents
+  const portalDocs = [
+    { portal: "title", name: "Government ID (Driver's License)", type: "id_document", status: "requested" },
+    { portal: "title", name: "Proof of Homeowner's Insurance", type: "insurance", status: "requested" },
+    { portal: "title", name: "HOA Documents", type: "hoa_docs", status: "uploaded", fileUrl: "/uploads/portal/hoa-docs.pdf", uploadedBy: seller2.id },
+    { portal: "title", name: "Survey", type: "survey", status: "requested" },
+    { portal: "lender", name: "Pay Stubs (Last 2 Months)", type: "pay_stub", status: "uploaded", fileUrl: "/uploads/portal/pay-stubs.pdf", uploadedBy: buyer1.id },
+    { portal: "lender", name: "W-2s (Last 2 Years)", type: "w2", status: "uploaded", fileUrl: "/uploads/portal/w2s.pdf", uploadedBy: buyer1.id },
+    { portal: "lender", name: "Tax Returns (Last 2 Years)", type: "tax_returns", status: "requested" },
+    { portal: "lender", name: "Bank Statements (Last 2 Months)", type: "bank_statements", status: "requested" },
+    { portal: "lender", name: "Employment Verification Letter", type: "employment_letter", status: "requested" },
+    { portal: "inspection", name: "Inspection Report", type: "inspection_report", status: "uploaded", fileUrl: "/uploads/portal/inspection-report.pdf", uploadedBy: buyer1.id },
+  ];
+
+  for (const doc of portalDocs) {
+    storage.createPortalDocument({ transactionId: txn.id, ...doc } as any);
+  }
+
+  // Seed some portal messages (AI chat history)
+  const inspectionMsgs = [
+    { role: "user", content: "What do I do about the foundation crack in the report?" },
+    { role: "ai", content: "**Foundation Issues — What You Need to Know**\n\nThe inspector noted a hairline crack in the northeast corner. Based on its description, this appears to be a settlement crack rather than a structural issue.\n\n**Recommended action:**\n1. Request a structural engineer evaluation ($300–600)\n2. If the engineer confirms it's cosmetic, proceed with a $500 seller credit for future monitoring\n3. If structural, request a credit of $5,000–15,000 or reconsider the purchase\n\nWould you like me to draft a repair request?" },
+  ];
+  const escrowMsgs = [
+    { role: "user", content: "How do I know the wire instructions are legitimate?" },
+    { role: "ai", content: "**Wire Fraud Protection — Critical**\n\nAlways call the title company directly using a phone number from their official website (not from any email). Verify the routing and account number verbally before sending. Never wire based solely on emailed instructions." },
+  ];
+
+  for (const msg of inspectionMsgs) {
+    storage.createPortalMessage({ transactionId: txn.id, portal: "inspection", userId: buyer1.id, role: msg.role, content: msg.content });
+  }
+  for (const msg of escrowMsgs) {
+    storage.createPortalMessage({ transactionId: txn.id, portal: "escrow", userId: buyer1.id, role: msg.role, content: msg.content });
+  }
+}
+
+// Portal AI response generator (rule-based with OpenAI fallback)
+async function getPortalAIResponse(
+  portal: string,
+  message: string,
+  context: { txn: any; listing: any; offer: any; userRole: string }
+): Promise<string> {
+  const { txn, listing, userRole } = context;
+  const address = listing ? `${listing.address}, ${listing.city}, ${listing.state}` : `Transaction #${txn.id}`;
+  const lower = message.toLowerCase();
+
+  const portalResponses: Record<string, string> = {
+    inspection: (() => {
+      if (lower.includes("foundation") || lower.includes("crack")) {
+        return `**Foundation Issues — What You Need to Know**\n\nFoundation cracks can range from cosmetic settlement cracks (common in any home) to structural issues requiring immediate attention.\n\n**Red flags to watch for:**\n• Horizontal cracks (most serious — indicate soil pressure)\n• Stair-step cracks in brick/block\n• Cracks wider than 1/4 inch\n• Doors/windows that stick or won't close properly\n\n**Recommended action:** Request a structural engineer evaluation. Cost: $300–600. If serious issues are confirmed, request a seller credit of $5,000–20,000+ depending on severity. You also have the right to exit the contract during the inspection period with your earnest money back.`;
+      }
+      if (lower.includes("roof")) {
+        return `**Roof Issues — Your Options**\n\nRoof replacement costs $8,000–20,000 depending on size and materials. Here's how to handle this:\n\n1. **Request a seller credit** equal to the repair estimate — this is often the cleanest solution\n2. **Request seller repair** using a licensed contractor\n3. **Negotiate a price reduction** to reflect the needed work\n4. **Walk away** during the inspection period if issues are too severe\n\n**Pro tip:** Get 2–3 contractor bids and use the average in your repair request. Sellers are more likely to accept credits backed by written estimates.`;
+      }
+      if (lower.includes("walk away") || lower.includes("exit") || lower.includes("cancel")) {
+        return `**Exercising Your Inspection Contingency**\n\nYou have the right to exit this transaction during the inspection period without penalty. Here's what that means:\n\n✅ Your earnest money is fully refunded\n✅ No further obligation to purchase\n✅ No penalties or fees\n\n**Timeline:** You typically have 10 days from contract acceptance. Check your contract for the exact deadline.\n\nIf you'd like to continue but want better terms, I can help you draft a repair request or negotiate a credit instead. What would you like to do?`;
+      }
+      return `**Inspection Guidance for ${address}**\n\nI can help you navigate the inspection findings. Common areas to focus on:\n\n• **Roof** — Check age and condition. Average lifespan: 20–25 years\n• **HVAC** — Systems over 15 years old may need replacement soon ($4,000–12,000)\n• **Foundation** — Any cracks should be evaluated by a structural engineer\n• **Electrical** — Older panels may need upgrading ($1,500–4,000)\n• **Plumbing** — Check for galvanized pipes or signs of leaks\n\nFor issues found, you can request: (1) repairs, (2) seller credit, or (3) price reduction. What specific finding would you like guidance on?`;
+    })(),
+    escrow: (() => {
+      if (lower.includes("wire fraud") || lower.includes("fraud") || lower.includes("safe")) {
+        return `**Wire Fraud Protection — Critical Information**\n\n⚠️ **Wire fraud is the #1 cybercrime in real estate.** Criminals intercept email and send fake wire instructions posing as your title company.\n\n**Always follow these rules:**\n1. **Call to verify** wire instructions using a phone number from the title company's official website — not from any email\n2. **Never send wire** based solely on emailed instructions\n3. **Verify the routing and account number** over the phone before sending\n4. **Be suspicious** of any last-minute changes to wire instructions\n\nOnce a wire is sent and received, recovery is nearly impossible. Banks recover less than 25% of fraudulently wired funds.`;
+      }
+      if (lower.includes("closing cost") || lower.includes("how much") || lower.includes("cash")) {
+        const salePrice = txn.salePrice;
+        const estimatedCosts = Math.round(salePrice * 0.025);
+        const downPayment = Math.round(salePrice * 0.2);
+        const total = estimatedCosts + downPayment;
+        return `**Estimated Cash Needed to Close**\n\nBased on the ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(salePrice)} sale price:\n\n• Down payment (20%): ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(downPayment)}\n• Closing costs (~2.5%): ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(estimatedCosts)}\n• **Estimated total at closing: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(total)}**\n\nLess your earnest money deposit (already paid). You'll receive the exact Closing Disclosure 3 business days before closing with your precise wire amount.`;
+      }
+      return `**Escrow & Closing Questions**\n\nI can help with:\n• Wire transfer instructions and fraud prevention\n• Closing cost breakdown\n• What happens at closing\n• Proration of taxes and HOA fees\n• Title insurance\n\nWhat would you like to know about your escrow and closing?`;
+    })(),
+    lender: (() => {
+      if (lower.includes("rate") || lower.includes("interest")) {
+        return `**Current Mortgage Rate Context**\n\nMortgage rates fluctuate daily. As of early 2026, 30-year fixed rates are in the 6.5–7.5% range depending on credit score and down payment.\n\n**Ways to get a better rate:**\n• Improve your credit score (720+ gets the best rates)\n• Put 20%+ down to avoid PMI\n• Buy down the rate with points (1 point = 1% of loan = ~0.25% rate reduction)\n• Shop multiple lenders — rates can vary by 0.5% or more\n• Consider a 15-year loan (lower rate, higher payment)\n\nFor your ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(txn.salePrice)} purchase, each 0.25% rate difference changes your monthly payment by ~${Math.round(txn.salePrice * 0.8 * 0.0025 / 12)} per month.`;
+      }
+      if (lower.includes("pmi") || lower.includes("down payment") || lower.includes("20%")) {
+        return `**PMI and Down Payment Guidance**\n\nPMI (Private Mortgage Insurance) is required when your down payment is less than 20%.\n\n**PMI costs:** 0.5%–1.5% of loan amount per year. On an ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(Math.round(txn.salePrice * 0.8))} loan, that's $${Math.round(txn.salePrice * 0.8 * 0.01 / 12)}/month.\n\n**How to eliminate PMI:**\n• Put 20% down (avoids PMI entirely)\n• Reach 20% equity and request cancellation\n• Refinance when you have 20% equity\n\n**Low down payment options:**\n• FHA loan: 3.5% down (MIP required, harder to remove)\n• Conventional: 3–5% down with PMI\n• VA loan: 0% down (if eligible) — no PMI ever`;
+      }
+      return `**Mortgage & Lending Questions**\n\nI can help you understand:\n• Pre-approval vs. pre-qualification\n• Mortgage types (fixed, ARM, FHA, VA, USDA)\n• How to get the best rate\n• PMI and how to avoid it\n• Debt-to-income ratio requirements\n• What underwriting looks for\n\nFor this ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(txn.salePrice)} purchase, what mortgage question can I help you with?`;
+    })(),
+    appraisal: (() => {
+      if (lower.includes("low") || lower.includes("below") || lower.includes("under")) {
+        return `**Low Appraisal — Your Options**\n\nIf the appraisal comes in below purchase price, you have several options:\n\n1. **Renegotiate the price** — Ask the seller to reduce the price to the appraised value\n2. **Split the difference** — Agree to a price between the appraised value and contract price\n3. **Make up the gap in cash** (appraisal gap coverage) — Pay the difference out of pocket\n4. **Challenge the appraisal** — Request a reconsideration with comparable sales data\n5. **Order a second appraisal** — Check if your lender allows this\n6. **Exercise your appraisal contingency** — Exit with your earnest money back\n\n**Recommended approach:** First request reconsideration with 3 comparable sales the appraiser may have missed. If that fails, negotiate with the seller — they may prefer to reduce the price over losing the deal entirely.`;
+      }
+      return `**Appraisal Questions**\n\nThe appraisal determines if the lender will fund your loan at the contract price.\n\n**Key things to know:**\n• Appraiser is hired by the lender (not buyer or seller)\n• Must be comparable to recent nearby sales\n• Usually takes 1–3 weeks to complete\n• You have a right to receive a copy\n\nFor ${address}:\n• Purchase price: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(txn.salePrice)}\n• If appraised at or above this value, great news — you're proceeding as planned\n• If below, we'll review your options together\n\nWhat specifically would you like to know about the appraisal process?`;
+    })(),
+    title: (() => {
+      if (lower.includes("lien") || lower.includes("encumbrance") || lower.includes("cloud")) {
+        return `**Title Issues — Liens and Encumbrances**\n\nTitle issues must be resolved before closing. Common issues include:\n\n• **Mortgage liens** — Must be paid off at closing (handled automatically)\n• **Mechanic's liens** — From unpaid contractors. Seller must satisfy before closing\n• **Tax liens** — Unpaid property taxes. Must be cleared\n• **HOA liens** — Unpaid HOA dues. Must be resolved\n• **Easements** — Rights others have to use part of the property (utility companies, etc.). Usually not a problem unless they affect planned use\n\n**Title insurance** protects you from undiscovered issues. Owner's policy is a one-time premium and covers you for as long as you own the home.\n\nAsk the title company for a copy of the preliminary title report so we can review any issues together.`;
+      }
+      return `**Title Company Questions**\n\nThe title company handles:\n• Title search (verifying clean ownership history)\n• Title insurance\n• Escrow and closing coordination\n• Document preparation\n• Recording the deed with the county\n\nCommon questions I can help with:\n• What does title insurance cover?\n• How long does the title search take?\n• What documents does the title company need from me?\n• What is an encumbrance or lien?\n• What happens at the closing table?\n\nWhat would you like to know?`;
+    })(),
+    general: `**Transaction Assistant for ${address}**\n\nI can help you navigate every step of your ${userRole === "buyer" ? "home purchase" : "home sale"} at ${address}.\n\n**Your portals:**\n• Inspection — Upload and analyze your inspection report\n• Escrow & Closing — Wire instructions and closing costs\n• Lender — Mortgage status and required documents\n• Appraisal — Valuation report and analysis\n• Title — Document requests and title search status\n\nWhat would you like help with?`,
+  };
+
+  const response = portalResponses[portal] || portalResponses.general;
+
+  // Try OpenAI if available
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const systemPrompt = `You are an expert real estate AI assistant helping a ${userRole} navigate their ${portal} portal for the property at ${address} (sale price: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(txn.salePrice)}). Be specific, practical, and concise. Format responses with markdown.`;
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [{ role: "system", content: systemPrompt }, { role: "user", content: message }],
+          max_tokens: 600,
+          temperature: 0.7,
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as any;
+        return data.choices?.[0]?.message?.content || response;
+      }
+    } catch {
+      // Fall through to rule-based
+    }
+  }
+
+  return response;
 }
 
 export function registerRoutes(server: Server, app: Express) {
@@ -810,6 +996,157 @@ export function registerRoutes(server: Server, app: Express) {
 
     const updated = storage.updateTransaction(txnId, { [step]: status });
     res.json(updated);
+  });
+
+  // ── Portal: Checklist ──────────────────────────────────────────────────────
+  app.get("/api/transactions/:id/checklist", requireAuth, (req, res) => {
+    const txnId = parseInt(req.params.id);
+    const currentUser = (req as any).user;
+    const txn = storage.getTransaction(txnId);
+    if (!txn) return res.status(404).json({ message: "Transaction not found" });
+
+    // Determine user role
+    const role = currentUser.id === txn.buyerId ? "buyer" : currentUser.id === txn.sellerId ? "seller" : null;
+    if (!role) return res.status(403).json({ message: "Not authorized" });
+
+    let items = storage.getChecklistByRole(txnId, role);
+
+    // Auto-seed checklist if empty
+    if (items.length === 0) {
+      const now = new Date();
+      const addDays = (d: number) => { const dt = new Date(now); dt.setDate(dt.getDate() + d); return dt.toISOString().split("T")[0]; };
+
+      const buyerItems = [
+        { title: "Get mortgage pre-approval", description: "Contact your lender and submit pre-approval documentation", category: "lender", order: 1, dueDate: addDays(3) },
+        { title: "Schedule home inspection", description: "Book an inspector within 10 days of contract", category: "inspection", order: 2, dueDate: addDays(10) },
+        { title: "Review inspection report", description: "AI will analyze findings when uploaded", category: "inspection", order: 3, dueDate: addDays(14) },
+        { title: "Request repairs or credits", description: "Based on inspection findings", category: "inspection", order: 4, dueDate: addDays(16) },
+        { title: "Complete mortgage application", description: "Submit full application to your lender", category: "lender", order: 5, dueDate: addDays(7) },
+        { title: "Order homeowner's insurance", description: "Required before closing", category: "general", order: 6, dueDate: addDays(20) },
+        { title: "Schedule appraisal", description: "Your lender will order this", category: "appraisal", order: 7, dueDate: addDays(14) },
+        { title: "Review appraisal report", description: "AI will analyze the valuation", category: "appraisal", order: 8, dueDate: addDays(18) },
+        { title: "Review closing disclosure", description: "Review 3 days before closing (required by law)", category: "escrow", order: 9, dueDate: addDays(27) },
+        { title: "Wire closing funds", description: "Send funds to escrow per wire instructions", category: "escrow", order: 10, dueDate: addDays(29) },
+        { title: "Final walkthrough", description: "Schedule via the platform", category: "general", order: 11, dueDate: addDays(29) },
+        { title: "Attend closing", description: "Sign final documents and get your keys", category: "general", order: 12, dueDate: addDays(30) },
+      ];
+      const sellerItems = [
+        { title: "Complete seller disclosure", description: "Fill out property condition disclosure", category: "title", order: 1, dueDate: addDays(3) },
+        { title: "Provide access for inspection", description: "Schedule access for buyer's inspector", category: "inspection", order: 2, dueDate: addDays(10) },
+        { title: "Review inspection requests", description: "Respond to buyer's repair/credit requests", category: "inspection", order: 3, dueDate: addDays(16) },
+        { title: "Provide access for appraisal", description: "Schedule access for appraiser", category: "appraisal", order: 4, dueDate: addDays(14) },
+        { title: "Gather required documents", description: "Title, deed, HOA docs, tax records", category: "title", order: 5, dueDate: addDays(7) },
+        { title: "Review title report", description: "Ensure no liens or encumbrances", category: "title", order: 6, dueDate: addDays(21) },
+        { title: "Upload ID for title company", description: "Driver's license or passport", category: "title", order: 7, dueDate: addDays(14) },
+        { title: "Review closing disclosure", description: "Review 3 days before closing", category: "escrow", order: 8, dueDate: addDays(27) },
+        { title: "Prepare for final walkthrough", description: "Ensure property is in agreed condition", category: "general", order: 9, dueDate: addDays(29) },
+        { title: "Attend closing", description: "Sign final documents and transfer ownership", category: "general", order: 10, dueDate: addDays(30) },
+      ];
+
+      const toSeed = role === "buyer" ? buyerItems : sellerItems;
+      for (const item of toSeed) {
+        storage.createChecklistItem({ transactionId: txnId, role, status: "pending", ...item });
+      }
+      items = storage.getChecklistByRole(txnId, role);
+    }
+
+    res.json(items);
+  });
+
+  app.patch("/api/transactions/:id/checklist/:itemId", requireAuth, (req, res) => {
+    const id = parseInt(req.params.itemId);
+    const { status } = req.body as { status: string };
+    const allowed = ["pending", "in_progress", "completed"];
+    if (!allowed.includes(status)) return res.status(400).json({ message: "Invalid status" });
+    const updated = storage.updateChecklistItem(id, { status });
+    if (!updated) return res.status(404).json({ message: "Item not found" });
+    res.json(updated);
+  });
+
+  // ── Portal: AI Chat ────────────────────────────────────────────────────────
+  app.post("/api/transactions/:id/portal-chat", requireAuth, async (req, res) => {
+    const txnId = parseInt(req.params.id);
+    const currentUser = (req as any).user;
+    const txn = storage.getTransaction(txnId);
+    if (!txn) return res.status(404).json({ message: "Transaction not found" });
+
+    const { portal, message } = req.body as { portal: string; message: string };
+    if (!portal || !message) return res.status(400).json({ message: "portal and message required" });
+
+    // Save user message
+    storage.createPortalMessage({ transactionId: txnId, portal, userId: currentUser.id, role: "user", content: message });
+
+    // Generate AI response
+    const listing = storage.getListing(txn.listingId);
+    const offer = storage.getOffer(txn.offerId);
+    const userRole = currentUser.id === txn.buyerId ? "buyer" : "seller";
+
+    const aiResponse = await getPortalAIResponse(portal, message, { txn, listing, offer, userRole });
+
+    const aiMsg = storage.createPortalMessage({ transactionId: txnId, portal, userId: currentUser.id, role: "ai", content: aiResponse });
+
+    res.json({ message: aiMsg, response: aiResponse });
+  });
+
+  app.get("/api/transactions/:id/portal-messages/:portal", requireAuth, (req, res) => {
+    const txnId = parseInt(req.params.id);
+    const { portal } = req.params;
+    const msgs = storage.getPortalMessages(txnId, portal);
+    res.json(msgs);
+  });
+
+  // ── Portal: Documents ─────────────────────────────────────────────────────
+  app.get("/api/transactions/:id/portal-documents", requireAuth, (req, res) => {
+    const txnId = parseInt(req.params.id);
+    const portal = req.query.portal as string | undefined;
+    const docs = storage.getPortalDocuments(txnId, portal);
+    res.json(docs);
+  });
+
+  app.post("/api/transactions/:id/documents/upload", requireAuth, (req, res) => {
+    const txnId = parseInt(req.params.id);
+    const currentUser = (req as any).user;
+    const { portal, name, type, documentId } = req.body as { portal: string; name: string; type: string; documentId?: number };
+
+    if (documentId) {
+      // Update existing document status
+      const updated = storage.updatePortalDocument(documentId, { status: "uploaded", uploadedBy: currentUser.id, fileUrl: `/uploads/portal/${Date.now()}-${name}` });
+      return res.json(updated);
+    }
+
+    const doc = storage.createPortalDocument({
+      transactionId: txnId,
+      portal: portal || "general",
+      name: name || "Document",
+      type: type || "document",
+      status: "uploaded",
+      uploadedBy: currentUser.id,
+      fileUrl: `/uploads/portal/${Date.now()}-${name}`,
+    });
+    res.json(doc);
+  });
+
+  app.patch("/api/transactions/:id/portal-documents/:docId", requireAuth, (req, res) => {
+    const id = parseInt(req.params.docId);
+    const updated = storage.updatePortalDocument(id, req.body);
+    if (!updated) return res.status(404).json({ message: "Document not found" });
+    res.json(updated);
+  });
+
+  // ── Portal: Lender Info ───────────────────────────────────────────────────
+  app.patch("/api/transactions/:id/lender", requireAuth, (req, res) => {
+    const txnId = parseInt(req.params.id);
+    const txn = storage.getTransaction(txnId);
+    if (!txn) return res.status(404).json({ message: "Transaction not found" });
+    // We store lender info as a portal message with role "system"
+    const msg = storage.createPortalMessage({
+      transactionId: txnId,
+      portal: "lender",
+      userId: (req as any).user.id,
+      role: "user",
+      content: JSON.stringify({ type: "lender_info", ...req.body }),
+    });
+    res.json(msg);
   });
 
   // Document download
