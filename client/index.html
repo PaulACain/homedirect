@@ -6,9 +6,9 @@
     <title>HomeDirectAI - Buy &amp; Sell Homes Without Agents</title>
     <meta name="description" content="The AI-powered real estate platform. Buy or sell your home with zero agent commissions. Just 1% at closing." />
 
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#2D7A4F" />
+    <!-- PWA Manifest (swapped dynamically for chaperone app) -->
+    <link rel="manifest" id="pwa-manifest" href="/manifest.json" />
+    <meta name="theme-color" id="pwa-theme" content="#2D7A4F" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
@@ -16,8 +16,8 @@
     <!-- iOS PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="HomeDirectAI" />
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" id="pwa-title" content="HomeDirectAI" />
+    <link rel="apple-touch-icon" id="pwa-icon" href="/icons/apple-touch-icon.png" />
 
     <!-- Open Graph -->
     <meta property="og:title" content="HomeDirectAI — No Agents. Just AI." />
@@ -32,10 +32,21 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Detect chaperone app route and swap PWA manifest/metadata
+      (function() {
+        var isChaperone = window.location.hash.indexOf('/chaperone-app') !== -1;
+        if (isChaperone) {
+          document.getElementById('pwa-manifest').setAttribute('href', '/manifest-chaperone.json');
+          document.getElementById('pwa-title').setAttribute('content', 'Chaperone');
+          document.getElementById('pwa-theme').setAttribute('content', '#0d1a12');
+          document.title = 'HomeDirectAI Chaperone';
+        }
+      })();
+
       // Register Service Worker
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').catch(function() {});
         });
       }
     </script>
