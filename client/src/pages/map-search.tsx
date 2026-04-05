@@ -86,7 +86,8 @@ export default function MapSearch() {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [showList, setShowList] = useState(true);
+  // Default to map view on mobile, list+map on desktop
+  const [showList, setShowList] = useState(false);
   const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
   const [searchInput, setSearchInput] = useState("");
 
@@ -173,7 +174,7 @@ export default function MapSearch() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] flex-col" data-testid="page-map-search">
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 3.5rem)', height: 'calc(100dvh - 3.5rem)' }} data-testid="page-map-search">
       {/* Top filter bar */}
       <div className="flex items-center gap-2 border-b bg-background px-3 py-2" data-testid="map-filter-bar">
         <div className="relative flex-1 max-w-xs">
@@ -239,6 +240,7 @@ export default function MapSearch() {
           data-testid="button-toggle-view"
         >
           {showList ? <><MapIcon className="mr-1 h-3 w-3" /> Map</> : <><List className="mr-1 h-3 w-3" /> List</>}
+
         </Button>
       </div>
 
@@ -325,12 +327,12 @@ export default function MapSearch() {
         </div>
 
         {/* Map */}
-        <div className={`flex-1 ${showList ? "hidden md:block" : "block"}`} data-testid="map-container">
+        <div className={`flex-1 min-h-0 ${showList ? "hidden md:block" : "block"}`} data-testid="map-container">
           <MapContainer
             center={defaultCenter}
             zoom={defaultZoom}
             className="h-full w-full"
-            style={{ height: "100%", width: "100%" }}
+            style={{ height: "100%", width: "100%", minHeight: "300px" }}
             zoomControl={true}
           >
             <TileLayer

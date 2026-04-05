@@ -96,7 +96,7 @@ export function AIAdvisor() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 group"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 group"
           data-testid="ai-advisor-button"
           aria-label="Talk to Home Advisor"
         >
@@ -104,7 +104,7 @@ export function AIAdvisor() {
             {/* Pulse ring */}
             <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" style={{ animationDuration: "3s" }} />
             {/* Main button */}
-            <div className="relative flex items-center gap-2.5 bg-primary text-primary-foreground pl-4 pr-5 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="relative flex items-center gap-2.5 bg-primary text-primary-foreground pl-4 pr-5 py-3 sm:py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               <div className="relative">
                 <Home className="h-5 w-5" />
                 <Sparkles className="h-3 w-3 absolute -top-1 -right-1 text-yellow-300" />
@@ -118,7 +118,7 @@ export function AIAdvisor() {
       {/* Chat Window */}
       {isOpen && (
         <div
-          className="fixed bottom-6 right-6 z-50 w-[400px] h-[560px] bg-background border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          className="fixed z-50 bg-background border border-border shadow-2xl flex flex-col overflow-hidden bottom-0 right-0 w-full h-[85dvh] rounded-t-2xl sm:bottom-6 sm:right-6 sm:w-[400px] sm:h-[560px] sm:rounded-2xl"
           data-testid="ai-advisor-chat"
         >
           {/* Header */}
