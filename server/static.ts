@@ -13,7 +13,8 @@ export function serveStatic(app: Express) {
   app.use(express.static(distPath));
 
   // Serve chaperone app — same React app but with chaperone PWA manifest
-  app.get("/chaperone-app", (_req, res) => {
+  // Also serve at /driver (clean path the SW has never cached)
+  app.get(["/chaperone-app", "/driver"], (_req, res) => {
     let html = fs.readFileSync(path.resolve(distPath, "index.html"), "utf8");
     // Swap manifest to chaperone version
     html = html.replace('href="./manifest.json"', 'href="/manifest-chaperone.json"');
@@ -25,8 +26,11 @@ export function serveStatic(app: Express) {
     html = html.replace('HomeDirectAI - Buy &amp; Sell Homes Without Agents', 'HomeDirectAI Chaperone');
     // Force hash to chaperone-app route
     html = html.replace('</body>', '<script>if(!window.location.hash.includes("chaperone-app")){window.location.hash="#/chaperone-app";}</script></body>');
-    // Don't register the main service worker for chaperone
-    html = html.replace("navigator.serviceWorker.register('/sw.js')", "/* sw disabled for chaperone */void(0)");
+    // Unregister any existing service worker AND don't register new one
+    html = html.replace(
+      "navigator.serviceWorker.register('/sw.js')",
+      "navigator.serviceWorker.getRegistrations().then(function(regs){regs.forEach(function(r){r.unregister()})})"      
+    );
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
   });

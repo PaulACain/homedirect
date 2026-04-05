@@ -25,8 +25,8 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   if (event.request.url.includes("/api/")) return;
 
-  // Never intercept chaperone-app requests — let them go to server
-  if (event.request.url.includes("/chaperone-app") || event.request.url.includes("/chaperone")) return;
+  // Never intercept chaperone/driver app requests — let them go to server
+  if (event.request.url.includes("/chaperone") || event.request.url.includes("/driver")) return;
 
   event.respondWith(
     fetch(event.request)
