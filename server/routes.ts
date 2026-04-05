@@ -6,6 +6,8 @@ import { createPaymentIntent, TEST_MODE } from "./payments";
 import { sendNewOfferEmail, sendOfferStatusEmail, sendWalkthroughScheduledEmail, sendWalkthroughAssignedEmail, sendDocumentReadyEmail } from "./email";
 import { getAINegotiationResponse } from "./ai-negotiation";
 import { getAdvisorResponse } from "./ai-advisor";
+import { chat, hasLLMProvider } from "./ai-engine";
+import { getBaseKnowledge, getPortalKnowledge } from "./knowledge-base";
 import { searchMLSListings } from "./mls-api";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -505,32 +507,21 @@ async function getPortalAIResponse(
     general: `**Transaction Assistant for ${address}**\n\nI can help you navigate every step of your ${userRole === "buyer" ? "home purchase" : "home sale"} at ${address}.\n\n**Your portals:**\n• Inspection — Upload and analyze your inspection report\n• Escrow & Closing — Wire instructions and closing costs\n• Lender — Mortgage status and required documents\n• Appraisal — Valuation report and analysis\n• Title — Document requests and title search status\n\nWhat would you like help with?`,
   };
 
-  const response = portalResponses[portal] || portalResponses.general;
+  const ruleBasedResponse = portalResponses[portal] || portalResponses.general;
 
-  // Try OpenAI if available
-  if (process.env.OPENAI_API_KEY) {
+  // Use the unified AI engine (Together AI -> Fireworks AI -> DeepSeek -> rule-based)
+  if (hasLLMProvider()) {
     try {
-      const systemPrompt = `You are an expert real estate AI assistant helping a ${userRole} navigate their ${portal} portal for the property at ${address} (sale price: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(txn.salePrice)}). Be specific, practical, and concise. Format responses with markdown.`;
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "system", content: systemPrompt }, { role: "user", content: message }],
-          max_tokens: 600,
-          temperature: 0.7,
-        }),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as any;
-        return data.choices?.[0]?.message?.content || response;
-      }
+      const portalContext = getPortalKnowledge(portal, userRole, address, txn.salePrice);
+      const systemPrompt = getBaseKnowledge() + portalContext;
+      const aiResult = await chat(systemPrompt, message, [], 600);
+      if (aiResult) return aiResult;
     } catch {
       // Fall through to rule-based
     }
   }
 
-  return response;
+  return ruleBasedResponse;
 }
 
 export function registerRoutes(server: Server, app: Express) {
@@ -1720,6 +1711,23 @@ export function registerRoutes(server: Server, app: Express) {
     res.json({ success: true });
   });
 
+  // ========== AI TRAINING DATA (admin only) ==========
+  app.get("/api/admin/training-data", requireAuth, requireAdmin, async (_req, res) => {
+    try {
+      const { generateTrainingData } = await import("./training-data");
+      const filePath = await generateTrainingData();
+      res.download(filePath, "real-estate-knowledge.jsonl", (err) => {
+        if (err) {
+          console.error("Training data download error:", err);
+          res.status(500).json({ message: "Failed to download training data" });
+        }
+      });
+    } catch (error: any) {
+      console.error("Training data generation error:", error);
+      res.status(500).json({ message: "Failed to generate training data" });
+    }
+  });
+
   // ========== MLS LISTINGS (Realtor16 via RapidAPI) ==========
   app.get("/api/mls/search", async (req, res) => {
     try {
@@ -1808,29 +1816,14 @@ export function registerRoutes(server: Server, app: Express) {
       const low = Math.round(suggestedPrice * 0.95 / 1000) * 1000;
       const high = Math.round(suggestedPrice * 1.05 / 1000) * 1000;
 
-      // Try DeepSeek if available
-      if (process.env.DEEPSEEK_API_KEY) {
+      // Try AI engine if available (Together AI -> Fireworks AI -> DeepSeek)
+      if (hasLLMProvider()) {
         try {
-          const dsRes = await fetch("https://api.deepseek.com/chat/completions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}` },
-            body: JSON.stringify({
-              model: "deepseek-chat",
-              messages: [{
-                role: "system",
-                content: "You are a real estate pricing expert for the Tampa Bay, Florida area. Provide a realistic price suggestion based on property details. Respond with JSON only in the format: {\"suggestedPrice\": number, \"low\": number, \"high\": number, \"rationale\": string}"
-              }, {
-                role: "user",
-                content: `Price this property: ${beds} bed / ${baths} bath / ${sqft} sqft / built ${yearBuilt} / ${propertyType} at ${address}, ${city}, ${state}`
-              }],
-              max_tokens: 300,
-              temperature: 0.3,
-            }),
-          });
-          if (dsRes.ok) {
-            const dsData = await dsRes.json() as any;
-            const content = dsData.choices?.[0]?.message?.content || "";
-            const parsed = JSON.parse(content.replace(/```json\n?|```/g, "").trim());
+          const pricingSystemPrompt = "You are a real estate pricing expert for the Tampa Bay, Florida area. Provide a realistic price suggestion based on property details. Respond with JSON only in the format: {\"suggestedPrice\": number, \"low\": number, \"high\": number, \"rationale\": string}";
+          const pricingUserMessage = `Price this property: ${beds} bed / ${baths} bath / ${sqft} sqft / built ${yearBuilt} / ${propertyType} at ${address}, ${city}, ${state}`;
+          const aiContent = await chat(pricingSystemPrompt, pricingUserMessage, [], 300);
+          if (aiContent) {
+            const parsed = JSON.parse(aiContent.replace(/```json\n?|```/g, "").trim());
             if (parsed.suggestedPrice) {
               return res.json({
                 suggestedPrice: parsed.suggestedPrice,

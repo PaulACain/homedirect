@@ -1,3 +1,13 @@
+/**
+ * AI Negotiation Engine
+ * Uses the unified AI engine (Together AI → Fireworks AI → DeepSeek → rule-based).
+ * The negotiation system prompt includes: full real estate knowledge base + specific
+ * transaction context + role-specific guidance.
+ */
+
+import { chat } from "./ai-engine";
+import { getBaseKnowledge, getNegotiationKnowledge } from "./knowledge-base";
+
 interface NegotiationParams {
   message: string;
   offer: {
@@ -186,7 +196,6 @@ ${listing.yearBuilt ? `**Age Factor:** Built in ${listing.yearBuilt} (${new Date
     }
 
     case "counter_offer": {
-      // Extract a specific price from the message if mentioned
       const priceMatch = message.match(/\$?([\d,]+)/);
       let targetPrice = offer.amount;
       if (priceMatch) {
@@ -223,7 +232,7 @@ Would you like me to formally draft one of these?`;
 
 Your offer already includes an inspection contingency — excellent. Here's how to use it effectively:
 
-**Standard inspection timeline:**
+**Standard inspection timeline (Florida — 15-day window):**
 • Home inspection: within 10 days of acceptance
 • Radon test: 48 hours (important in FL for mitigation)
 • WDO (termite) inspection: required for FHA/VA loans
@@ -239,6 +248,7 @@ ${listing.yearBuilt && new Date().getFullYear() - listing.yearBuilt > 20 ? "• 
 • Foundation for any settling or cracks
 • Water intrusion or mold signs
 • Pool/dock equipment (if applicable)
+${listing.yearBuilt && listing.yearBuilt >= 2006 && listing.yearBuilt <= 2009 ? "• ⚠️ Chinese drywall — possible for homes built 2006–2009. Check for sulfur smell and corroded copper pipes." : ""}
 
 **If significant issues are found:** You can (1) request repairs, (2) request a price reduction, or (3) walk away with your earnest money back.`;
     }
@@ -254,7 +264,7 @@ ${listing.yearBuilt && new Date().getFullYear() - listing.yearBuilt > 20 ? "• 
 
 **Standard timeline breakdown:**
 • Days 1–3: Executed contract, earnest money deposit due
-• Days 1–10: Home inspection window
+• Days 1–15: Home inspection window (Florida standard)
 • Days 1–14: Appraisal ordered by lender
 • Days 1–21: Title search & title insurance
 • Days 10–25: Lender processing & underwriting
@@ -289,7 +299,7 @@ ${listing.yearBuilt && new Date().getFullYear() - listing.yearBuilt > 20 ? "• 
 
 **Standard contingencies for your protection:**
 
-✅ **Inspection Contingency** (10-day window) — Allows you to back out or renegotiate if inspection reveals major issues. ${contingencies.includes("Inspection") ? "Already included." : "RECOMMEND ADDING."}
+✅ **Inspection Contingency** (15-day window in Florida) — Allows you to back out or renegotiate if inspection reveals major issues. ${contingencies.includes("Inspection") ? "Already included." : "RECOMMEND ADDING."}
 
 ✅ **Financing Contingency** (21-day window) — Protects your earnest money if your loan falls through. ${contingencies.includes("Financing") ? "Already included." : "RECOMMEND ADDING."}
 
@@ -368,7 +378,7 @@ ${
     : ""
 }${
   ["accepted", "pending", "countered"].includes(offer.status)
-    ? `3. **Inspection** (days 1–10 after acceptance) — Schedule home inspection at ~$300–500\n4. **Appraisal** (days 7–14) — Your lender orders an independent appraisal\n5. **Title Search** (days 7–21) — Title company confirms clean ownership history\n6. **Underwriting** (days 14–25) — Lender reviews your full financial package\n7. **Clear to Close** (day 25–28) — Final approval from lender\n8. **Closing Day** (day 30) — Sign documents, wire down payment, get keys! 🏠\n`
+    ? `3. **Inspection** (days 1–15 after acceptance) — Schedule home inspection at ~$350–600\n4. **Appraisal** (days 7–14) — Your lender orders an independent appraisal\n5. **Title Search** (days 7–21) — Title company confirms clean ownership history\n6. **Underwriting** (days 14–25) — Lender reviews your full financial package\n7. **Clear to Close** (day 25–28) — Final approval from lender\n8. **Closing Day** (day 30) — Sign documents, wire down payment, get keys! 🏠\n`
     : ""
 }
 **Documents you'll sign at closing:**
@@ -426,62 +436,42 @@ What would you like to know?`;
   }
 }
 
-async function callOpenAI(params: NegotiationParams): Promise<string> {
-  const { message, offer, listing, messages, userRole } = params;
+export async function getAINegotiationResponse(
+  params: NegotiationParams
+): Promise<string> {
+  // Build comprehensive system prompt: base knowledge + negotiation context
+  const negotiationContext = getNegotiationKnowledge({
+    userRole: params.userRole,
+    listingTitle: params.listing.title,
+    address: params.listing.address,
+    city: params.listing.city,
+    state: params.listing.state,
+    listingPrice: params.listing.price,
+    offerAmount: params.offer.amount,
+    offerStatus: params.offer.status,
+    counterAmount: params.offer.counterAmount,
+    bedrooms: params.listing.bedrooms,
+    bathrooms: params.listing.bathrooms,
+    sqft: params.listing.sqft,
+    yearBuilt: params.listing.yearBuilt,
+    propertyType: params.listing.propertyType,
+    hoaFee: params.listing.hoaFee,
+  });
 
-  const systemPrompt = `You are an expert real estate AI negotiation agent helping a ${userRole} with their transaction. 
-You have deep knowledge of real estate law, market analysis, negotiation tactics, and the home buying process.
-Always provide specific numbers based on the actual listing and offer data provided.
-Be concise, practical, and action-oriented. Format responses with markdown when helpful.
+  const systemPrompt = getBaseKnowledge() + negotiationContext;
 
-CURRENT TRANSACTION:
-- Listing: ${listing.title} at ${listing.address}, ${listing.city}, ${listing.state}
-- Listing price: $${listing.price.toLocaleString()}
-- Property: ${listing.bedrooms}BR/${listing.bathrooms}BA, ${listing.sqft} sqft${listing.yearBuilt ? `, built ${listing.yearBuilt}` : ""}
-- Offer amount: $${offer.amount.toLocaleString()} (${(((offer.amount - listing.price) / listing.price) * 100).toFixed(1)}% ${offer.amount < listing.price ? "below" : "above"} asking)
-- Offer status: ${offer.status}
-${offer.counterAmount ? `- Counter-offer: $${offer.counterAmount.toLocaleString()}` : ""}
-- Platform fee: 1% = $${(listing.price * 0.01).toLocaleString()} (saves $${(listing.price * 0.05).toLocaleString()} vs traditional 6% agent)`;
-
-  const conversationHistory = messages.slice(-10).map((m) => ({
+  // Build conversation history from negotiation messages
+  const history = params.messages.slice(-10).map((m) => ({
     role: m.senderType === "ai" ? "assistant" : "user",
     content: m.content,
   }));
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...conversationHistory,
-        { role: "user", content: message },
-      ],
-      max_tokens: 800,
-      temperature: 0.7,
-    }),
-  });
+  const result = await chat(systemPrompt, params.message, history, 800);
 
-  if (!response.ok) {
-    const err = await response.text();
-    console.error("OpenAI API error:", err);
-    // Fallback to rule-based on API failure
-    return getRuleBasedResponse(params);
+  if (result !== null) {
+    return result;
   }
 
-  const data = (await response.json()) as any;
-  return data.choices?.[0]?.message?.content || getRuleBasedResponse(params);
-}
-
-export async function getAINegotiationResponse(
-  params: NegotiationParams
-): Promise<string> {
-  if (process.env.OPENAI_API_KEY) {
-    return callOpenAI(params);
-  }
+  // Rule-based fallback when no API keys are configured
   return getRuleBasedResponse(params);
 }

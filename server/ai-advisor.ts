@@ -1,25 +1,14 @@
 /**
- * AI Home Advisor — DeepSeek-powered chat assistant
- * Available on every page, context-aware, with sensitive data filtering
+ * AI Home Advisor — Context-aware chat assistant
+ * Uses the unified AI engine (Together AI → Fireworks AI → DeepSeek → rule-based).
+ * Context awareness (page, role, transaction) is layered on top of the comprehensive
+ * real estate knowledge base from knowledge-base.ts.
  */
 
-// Strip sensitive data before sending to external API
-function sanitizeMessage(text: string): string {
-  return text
-    // SSN patterns
-    .replace(/\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/g, "[SSN REDACTED]")
-    // Bank account numbers (8+ digits)
-    .replace(/\b\d{8,17}\b/g, "[ACCOUNT REDACTED]")
-    // Routing numbers (9 digits)
-    .replace(/\b\d{9}\b/g, "[NUMBER REDACTED]")
-    // Credit card patterns
-    .replace(/\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g, "[CARD REDACTED]")
-    // Email-looking things that might be personal (keep for context but note it)
-    // Don't strip emails — they're needed for context
-    ;
-}
+import { chat, sanitizeMessage } from "./ai-engine";
+import { getBaseKnowledge } from "./knowledge-base";
 
-function buildSystemPrompt(context: {
+function buildContextPrompt(context: {
   page: string;
   userRole?: string;
   userName?: string;
@@ -72,39 +61,20 @@ function buildSystemPrompt(context: {
       pageContext = "The user is on the HomeDirectAI platform. Help with any real estate questions — buying, selling, the closing process, financing, inspections, or how the platform works.";
   }
 
-  return `You are the HomeDirectAI Home Advisor — a friendly, knowledgeable AI real estate assistant. You help buyers and sellers navigate the entire home buying and selling process.
+  return `## SESSION CONTEXT
+Current page: ${page}
+${userName ? `User's name: ${userName}` : ""}
+${userRole ? `User role: ${userRole}` : ""}
+${transactionId ? `Active transaction ID: #${transactionId}` : ""}
+${listingAddress ? `Property: ${listingAddress}` : ""}
+${offerAmount ? `Offer amount: $${offerAmount.toLocaleString()}` : ""}
+${listingPrice ? `Listing price: $${listingPrice.toLocaleString()}` : ""}
 
-PLATFORM CONTEXT:
-- HomeDirectAI charges just 1% at closing (vs traditional 5-6% agent commission)
-- Buyers pay $20 for walkthrough chaperones (local people who guide showings, like DoorDash for real estate)
-- AI handles negotiations, contracts, disclosures, and closing coordination
-- HomeDirectAI shows BOTH our own listings (1% fee, no traditional agent) AND MLS listings from the broader market
-- For MLS listings, the seller may have a traditional agent, but buyers can still use our AI negotiation tools and resources
-- Our listings are marked in green on the map; MLS listings from the broader market are marked in blue
-- Buyers who use HomeDirectAI on MLS listings can still save significantly by using our AI tools for offer prep and negotiation
-${userName ? `- The user's name is ${userName}` : ""}
-${userRole ? `- The user is a ${userRole}` : ""}
-${transactionId ? `- They have an active transaction (#${transactionId})` : ""}
-${listingAddress ? `- Property: ${listingAddress}` : ""}
-${offerAmount ? `- Offer amount: $${offerAmount.toLocaleString()}` : ""}
-
-CURRENT PAGE CONTEXT:
+## CURRENT PAGE CONTEXT
 ${pageContext}
 
-YOUR PERSONALITY:
-- Warm, approachable, and encouraging — buying/selling a home is stressful
-- Give specific, actionable advice — not vague generalities
-- Use simple language — avoid jargon unless explaining it
-- When you don't know something specific, say so and suggest who to contact
-- Keep responses concise (2-4 paragraphs max) unless the user asks for detail
-- If asked about something outside real estate, gently redirect
-- NEVER provide legal advice — always recommend consulting an attorney for legal questions
-- ALWAYS warn about wire fraud when discussing money transfers
-- Proactively mention how HomeDirectAI saves money when relevant (1% vs 5-6%)
-
-IMPORTANT: You now have access to real MLS data through the platform — buyers can browse live MLS listings alongside HomeDirectAI listings. However, you do not have access to the user's specific financial information. Be clear about this when relevant. You can provide general market knowledge and guidance.
-
-When discussing MLS listings: explain that these are from the broader market and may involve traditional agents on the seller side, but buyers can still use HomeDirectAI's AI tools to prepare competitive offers and navigate the process.`;
+## MLS LISTINGS NOTE
+HomeDirectAI shows BOTH our own listings (green on map, 1% fee) AND MLS listings from the broader market (blue on map). For MLS listings, the seller may have a traditional agent, but buyers can still use our AI negotiation tools to prepare competitive offers. When discussing MLS listings, explain that buyers can still save significantly by using our platform.`;
 }
 
 export async function getAdvisorResponse(
@@ -120,53 +90,17 @@ export async function getAdvisorResponse(
     listingPrice?: number;
   }
 ): Promise<string> {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const contextPrompt = buildContextPrompt(context);
+  const systemPrompt = getBaseKnowledge() + "\n\n" + contextPrompt;
 
-  if (!apiKey) {
-    // Fallback: basic rule-based responses when no API key
-    return getFallbackResponse(message, context);
+  const result = await chat(systemPrompt, message, conversationHistory, 800);
+
+  if (result !== null) {
+    return result;
   }
 
-  const sanitizedMessage = sanitizeMessage(message);
-  const systemPrompt = buildSystemPrompt(context);
-
-  // Build messages array (keep last 10 messages for context)
-  const messages = [
-    { role: "system", content: systemPrompt },
-    ...conversationHistory.slice(-10).map(m => ({
-      role: m.role as "user" | "assistant",
-      content: sanitizeMessage(m.content),
-    })),
-    { role: "user", content: sanitizedMessage },
-  ];
-
-  try {
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages,
-        max_tokens: 800,
-        temperature: 0.7,
-        stream: false,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error(`DeepSeek API error: ${response.status}`);
-      return getFallbackResponse(message, context);
-    }
-
-    const data = await response.json() as any;
-    return data.choices?.[0]?.message?.content || getFallbackResponse(message, context);
-  } catch (error) {
-    console.error("DeepSeek API call failed:", error);
-    return getFallbackResponse(message, context);
-  }
+  // Rule-based fallback when no API keys are configured
+  return getFallbackResponse(message, context);
 }
 
 function getFallbackResponse(message: string, context: { page: string }): string {
@@ -179,7 +113,7 @@ function getFallbackResponse(message: string, context: { page: string }): string
     return "Closing costs typically include your 1% HomeDirectAI fee, title insurance, recording fees, prorated taxes, and any lender fees. For a typical $400K home, buyers can expect $8,000-$12,000 in total closing costs. The big savings is on the commission — you save about $18,000 compared to using a traditional agent. Would you like me to break down the specific costs?";
   }
   if (lower.includes("inspection")) {
-    return "A home inspection is one of the most important steps in buying a home. A licensed inspector examines the property's structure, systems, and condition. The inspection typically costs $300-$500 and takes 2-3 hours. After receiving the report, our AI will analyze the findings and help you decide whether to request repairs, credits, or move forward as-is. Do you have specific concerns about the inspection?";
+    return "A home inspection is one of the most important steps in buying a home. A licensed inspector examines the property's structure, systems, and condition. The inspection typically costs $350-$600 and takes 2-3 hours. In Florida, the standard inspection period is 15 days from the effective date of the contract. After receiving the report, our AI will analyze the findings and help you decide whether to request repairs, credits, or move forward as-is. Do you have specific concerns about the inspection?";
   }
   if (lower.includes("offer") || lower.includes("negotiate")) {
     return "When you're ready to make an offer, our AI analyzes comparable sales, market conditions, and the property's time on market to help you determine a competitive offer price. Once submitted, the AI handles back-and-forth negotiation with the seller. You can ask for comps, suggest counter-offers, or request specific contingencies through the negotiation chat.";
@@ -193,9 +127,11 @@ function getFallbackResponse(message: string, context: { page: string }): string
   if (lower.includes("chaperone") || lower.includes("walkthrough") || lower.includes("showing")) {
     return "Our chaperone model is like DoorDash for home tours! When you schedule a walkthrough, a local, background-checked chaperone meets you at the property to guide you through. It costs just $20. They'll unlock the home, walk you through each room, and answer basic questions about the property. Any specific questions about scheduling a walkthrough?";
   }
-
   if (lower.includes("mls") || lower.includes("realtor") || lower.includes("market listing")) {
     return "HomeDirectAI now shows both our own listings (1% fee) and MLS listings from the broader market. Our own listings are the best deal — no traditional agents, just 1% at closing. But we also show you MLS listings so you can see everything available. For MLS listings, the seller may have a traditional agent, but you can still use our AI negotiation tools to prepare a competitive offer. Want to browse listings or have questions about a specific property?";
+  }
+  if (lower.includes("florida") || lower.includes("law") || lower.includes("disclosure")) {
+    return "Florida real estate has some unique rules. Sellers must disclose known material defects (Johnson v. Davis ruling). The standard inspection period is 15 days. Documentary stamp taxes are $0.70 per $100 of sale price (seller pays). Florida title insurance rates are set by state statute. I can walk you through any specific aspect of Florida real estate law you need to understand.";
   }
 
   return "I'm your HomeDirectAI Home Advisor! I can help with anything related to buying or selling a home — from understanding the closing process and inspections, to mortgage questions and negotiation strategy. Our platform saves you thousands with just a 1% fee at closing, and we show you both our own listings and MLS listings from the broader market. What would you like to know?";
