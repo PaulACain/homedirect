@@ -265,7 +265,9 @@ export async function searchMLSListings(params: MLSSearchParams): Promise<MLSLis
     // Deduplicate by address (API often returns the same property multiple times)
     const seen = new Set<string>();
     const listings = allListings.filter((l) => {
-      const key = `${l.address.toLowerCase().trim()}_${l.city.toLowerCase().trim()}_${l.price}`;
+      const addr = (typeof l.address === "string" ? l.address : "").toLowerCase().trim();
+      const city = (typeof l.city === "string" ? l.city : "").toLowerCase().trim();
+      const key = `${addr}_${city}_${l.price}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
