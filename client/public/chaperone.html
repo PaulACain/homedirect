@@ -21,11 +21,18 @@
 
     <!-- Fonts -->
     <link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600,700&display=swap" rel="stylesheet">
+    <style>
+      body { margin: 0; background: #0d1a12; }
+    </style>
   </head>
   <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Redirect to the main app with chaperone hash route
-      window.location.replace('/#/chaperone-app');
+      // Set the hash to chaperone-app so React renders the right view
+      if (!window.location.hash || !window.location.hash.includes('chaperone-app')) {
+        window.location.hash = '#/chaperone-app';
+      }
     </script>
   </body>
 </html>

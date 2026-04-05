@@ -1,4 +1,4 @@
-const CACHE_NAME = "homedirectai-v1";
+const CACHE_NAME = "homedirectai-v2";
 const STATIC_ASSETS = ["/", "/manifest.json"];
 
 // Install — cache shell
@@ -24,6 +24,9 @@ self.addEventListener("fetch", (event) => {
   // Skip non-GET and API requests
   if (event.request.method !== "GET") return;
   if (event.request.url.includes("/api/")) return;
+
+  // Never intercept chaperone-app requests — let them go to server
+  if (event.request.url.includes("/chaperone-app") || event.request.url.includes("/chaperone")) return;
 
   event.respondWith(
     fetch(event.request)
