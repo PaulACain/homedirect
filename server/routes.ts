@@ -1680,10 +1680,11 @@ export function registerRoutes(server: Server, app: Express) {
         propertyType: propertyType || undefined,
       });
 
-      res.json({ listings, total: listings.length, source: "mls" });
+      const configured = !!process.env.RAPIDAPI_KEY;
+      res.json({ listings, total: listings.length, source: "mls", configured });
     } catch (error: any) {
       console.error("MLS search error:", error);
-      res.status(500).json({ message: "MLS search failed", listings: [], total: 0 });
+      res.status(500).json({ message: "MLS search failed", listings: [], total: 0, configured: !!process.env.RAPIDAPI_KEY });
     }
   });
 

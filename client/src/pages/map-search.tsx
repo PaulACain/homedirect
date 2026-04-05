@@ -121,6 +121,7 @@ export default function MapSearch() {
   const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [showMLS, setShowMLS] = useState(true);
+  const [mlsConfigured, setMlsConfigured] = useState(true);
 
   const [filters, setFilters] = useState({
     minPrice: "", maxPrice: "", minBeds: "", maxBeds: "", propertyType: "all",
@@ -175,6 +176,7 @@ export default function MapSearch() {
 
       const res = await apiRequest("GET", `/api/mls/search?${params}`);
       const data = await res.json();
+      setMlsConfigured(data.configured !== false);
       setMlsListings(data.listings ?? []);
     } catch (e) {
       console.error("Failed to fetch MLS listings:", e);
