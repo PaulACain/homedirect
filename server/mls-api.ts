@@ -183,7 +183,7 @@ export async function searchMLSListings(params: MLSSearchParams): Promise<MLSLis
 
   const location = params.location || "Tampa, FL";
   qs.set("location", location);
-  qs.set("limit", String(Math.min(params.limit || 20, 42))); // API max ~42
+  qs.set("limit", String(Math.min(params.limit || 50, 200))); // API supports up to 200
   qs.set("offset", String(params.offset || 0));
 
   // Sort mapping
@@ -258,11 +258,20 @@ export async function searchMLSListings(params: MLSSearchParams): Promise<MLSLis
 
     console.log(`[MLS] Got ${results.length} raw results`);
 
-    const listings = results
+    const allListings = results
       .map(transformListing)
       .filter((l): l is MLSListing => l !== null);
 
-    console.log(`[MLS] Transformed ${listings.length} valid listings`);
+    // Deduplicate by address (API often returns the same property multiple times)
+    const seen = new Set<string>();
+    const listings = allListings.filter((l) => {
+      const key = `${l.address.toLowerCase().trim()}_${l.city.toLowerCase().trim()}_${l.price}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    console.log(`[MLS] Transformed ${allListings.length} → ${listings.length} after dedup`);
 
     setCached(cacheKey, listings);
     return listings;

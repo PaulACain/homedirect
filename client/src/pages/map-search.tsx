@@ -168,7 +168,7 @@ export default function MapSearch() {
     if (!showMLS) return;
     setMlsLoading(true);
     try {
-      const params = new URLSearchParams({ location, limit: "20" });
+      const params = new URLSearchParams({ location, limit: "100" });
       if (filters.minPrice) params.set("minPrice", filters.minPrice);
       if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
       if (filters.minBeds) params.set("minBeds", filters.minBeds);
