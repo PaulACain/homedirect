@@ -25,6 +25,7 @@ import PortalAppraisal from "@/pages/portal-appraisal";
 import PortalTitle from "@/pages/portal-title";
 import EditListing from "@/pages/edit-listing";
 import AdminDashboard from "@/pages/admin";
+import CopyGenerator from "@/pages/copy-generator";
 import ClosingPrep from "@/pages/closing-prep";
 import NotFound from "@/pages/not-found";
 import { AIAdvisor } from "@/components/ai-advisor";
@@ -51,6 +52,7 @@ function AppRouter() {
       <Route path="/transaction/:id" component={TransactionHub} />
       <Route path="/edit-listing/:id" component={EditListing} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/copy-generator" component={CopyGenerator} />
       <Route component={NotFound} />
     </Switch>
   );
