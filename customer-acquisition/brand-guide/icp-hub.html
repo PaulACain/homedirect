@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HomeDirectAI — ICP Playbooks</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --midnight: #0D1B2A;
+      --midnight-2: #111f30;
+      --midnight-3: #162436;
+      --card: #1a2d40;
+      --card-2: #1f3449;
+      --green: #00C47A;
+      --green-dim: rgba(0,196,122,0.1);
+      --green-glow: rgba(0,196,122,0.2);
+      --teal: #00D4FF;
+      --teal-dim: rgba(0,212,255,0.1);
+      --gold: #F5C842;
+      --gold-dim: rgba(245,200,66,0.1);
+      --offwhite: #F4F7F5;
+      --gray: #6B7A8D;
+      --border: rgba(255,255,255,0.07);
+      --border-hover: rgba(255,255,255,0.13);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--midnight);
+      color: var(--offwhite);
+      font-family: 'Manrope', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2.5rem; height: 60px;
+      background: rgba(13,27,42,0.95);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 0.9rem; letter-spacing: 0.02em;
+      color: var(--offwhite); text-decoration: none;
+    }
+    .nav-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green-glow); }
+    .nav-back { font-size: 0.78rem; font-weight: 600; color: var(--gray); text-decoration: none; letter-spacing: 0.04em; transition: color 0.2s; }
+    .nav-back:hover { color: var(--green); }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center; padding: 72px 2rem 48px; position: relative;
+    }
+    .hero::before {
+      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 700px; height: 500px;
+      background: radial-gradient(ellipse, rgba(0,196,122,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--green); border: 1px solid var(--green-dim);
+      background: var(--green-dim); padding: 5px 16px; border-radius: 20px; margin-bottom: 24px;
+    }
+    .hero h1 { font-size: clamp(2.2rem, 4.5vw, 3.4rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 16px; }
+    .hero h1 em { font-style: normal; color: var(--green); }
+    .hero p { font-family: 'DM Sans'; font-size: 1rem; color: var(--gray); max-width: 560px; margin: 0 auto; line-height: 1.7; }
+
+    /* ── AUDIENCE TABS ── */
+    .tab-bar-wrap {
+      position: sticky; top: 60px; z-index: 150;
+      background: rgba(13,27,42,0.97); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-bar {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; gap: 0; padding: 0 2rem;
+    }
+    .tab-btn {
+      padding: 16px 28px; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; border: none; background: none; cursor: pointer;
+      color: var(--gray); border-bottom: 2px solid transparent;
+      transition: all 0.2s; position: relative; top: 1px;
+    }
+    .tab-btn:hover { color: var(--offwhite); }
+    .tab-btn.active-buyer { color: var(--green); border-bottom-color: var(--green); }
+    .tab-btn.active-seller { color: var(--gold); border-bottom-color: var(--gold); }
+    .tab-btn.active-concierge { color: var(--teal); border-bottom-color: var(--teal); }
+
+    /* ── PANELS ── */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 48px 2rem 80px; }
+
+    /* ── PANEL HERO ── */
+    .panel-hero {
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 32px; align-items: start;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 40px; margin-bottom: 40px;
+    }
+    .panel-hero-eyebrow {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .panel-hero h2 { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 14px; }
+    .panel-hero p { font-family: 'DM Sans'; font-size: 0.95rem; color: var(--gray); line-height: 1.7; max-width: 600px; margin-bottom: 20px; }
+    .panel-hero-quote {
+      border-left: 3px solid; padding-left: 16px; margin-top: 4px;
+      font-family: 'DM Sans'; font-size: 0.9rem; color: var(--gray); line-height: 1.6; font-style: italic;
+    }
+    .panel-stats { display: flex; flex-direction: column; gap: 16px; min-width: 200px; }
+    .stat-box {
+      background: var(--midnight-3); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 22px; text-align: center;
+    }
+    .stat-box .val { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.03em; }
+    .stat-box .lbl { font-size: 0.7rem; font-weight: 500; color: var(--gray); margin-top: 3px; letter-spacing: 0.04em; }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--gray);
+      margin-bottom: 20px; padding-left: 2px;
+    }
+
+    /* ── SEGMENT GRID ── */
+    .segment-grid {
+      display: grid; gap: 16px; margin-bottom: 48px;
+    }
+    .segment-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .segment-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+    .seg-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+      transition: all 0.25s; display: flex; flex-direction: column; gap: 10px;
+    }
+    .seg-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+
+    .seg-tier {
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 3px 9px; border-radius: 8px; display: inline-block; width: fit-content;
+    }
+    .seg-name { font-size: 0.98rem; font-weight: 700; line-height: 1.3; }
+    .seg-demo {
+      font-family: 'DM Sans'; font-size: 0.8rem; color: var(--gray); line-height: 1.6;
+    }
+    .seg-quote {
+      font-family: 'DM Sans'; font-size: 0.78rem; color: var(--gray);
+      font-style: italic; line-height: 1.6;
+      border-left: 2px solid; padding-left: 10px; margin-top: 4px;
+    }
+    .seg-tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .seg-tag {
+      font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em;
+      padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04); color: var(--gray);
+    }
+    .seg-position {
+      font-family: 'DM Sans'; font-size: 0.8rem; line-height: 1.5;
+      padding: 10px 12px; border-radius: 10px; margin-top: 4px;
+    }
+
+    /* ── JOURNEY ── */
+    .journey-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 0; margin-bottom: 48px;
+      border: 1px solid var(--border); border-radius: 20px; overflow: hidden;
+    }
+    .journey-act {
+      padding: 32px; position: relative;
+    }
+    .journey-act:not(:last-child) { border-right: 1px solid var(--border); }
+    .act-num {
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--gray); margin-bottom: 8px;
+    }
+    .act-label { font-size: 1rem; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.01em; }
+    .act-hook {
+      font-family: 'DM Sans'; font-size: 0.8rem; color: var(--gray);
+      font-style: italic; margin-bottom: 16px; line-height: 1.6;
+    }
+    .act-moments { display: flex; flex-direction: column; gap: 10px; }
+    .moment {
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .moment-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 7px;
+    }
+    .moment-text { font-family: 'DM Sans'; font-size: 0.8rem; line-height: 1.5; }
+    .moment-emotion { font-size: 0.7rem; font-weight: 600; margin-top: 2px; }
+    .act-voice {
+      font-family: 'DM Sans'; font-size: 0.78rem; line-height: 1.6;
+      border-left: 2px solid; padding-left: 12px;
+      margin-top: 16px; color: var(--gray); font-style: italic;
+    }
+
+    /* ── MESSAGING ── */
+    .messaging-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 48px;
+    }
+    .msg-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px;
+    }
+    .msg-card h4 {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .headline-list { display: flex; flex-direction: column; gap: 16px; }
+    .headline-item {
+      border-left: 2px solid; padding-left: 14px;
+    }
+    .headline-label {
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray); margin-bottom: 5px;
+    }
+    .headline-text {
+      font-size: 0.9rem; font-weight: 700; line-height: 1.4; font-family: 'Manrope';
+    }
+    .headline-note {
+      font-family: 'DM Sans'; font-size: 0.72rem; color: var(--gray); margin-top: 3px; line-height: 1.5;
+    }
+    .word-table { width: 100%; border-collapse: collapse; }
+    .word-table tr { border-bottom: 1px solid var(--border); }
+    .word-table tr:last-child { border-bottom: none; }
+    .word-table td { padding: 8px 0; font-size: 0.8rem; vertical-align: top; }
+    .word-table td:first-child { font-weight: 600; width: 45%; padding-right: 12px; }
+    .word-table td:last-child { font-family: 'DM Sans'; color: var(--gray); font-size: 0.77rem; line-height: 1.5; }
+    .word-use { color: var(--green); }
+    .word-avoid { color: #ff6b6b; text-decoration: line-through; }
+
+    /* ── CHANNELS ── */
+    .channel-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 48px;
+    }
+    .channel-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .channel-name { font-size: 0.9rem; font-weight: 700; }
+    .channel-segment { font-size: 0.7rem; font-weight: 600; color: var(--gray); letter-spacing: 0.04em; }
+    .channel-priority {
+      display: inline-block; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; padding: 3px 9px; border-radius: 8px; width: fit-content;
+    }
+    .p1 { background: rgba(0,196,122,0.12); color: var(--green); border: 1px solid rgba(0,196,122,0.2); }
+    .p2 { background: rgba(245,200,66,0.1); color: var(--gold); border: 1px solid rgba(245,200,66,0.2); }
+    .p3 { background: rgba(107,122,141,0.12); color: var(--gray); border: 1px solid var(--border); }
+    .channel-note { font-family: 'DM Sans'; font-size: 0.75rem; color: var(--gray); line-height: 1.5; }
+
+    /* ── AD CONCEPTS ── */
+    .ad-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 48px;
+    }
+    .ad-card {
+      background: var(--midnight-3); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .ad-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gray); }
+    .ad-name { font-size: 1rem; font-weight: 700; }
+    .ad-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+    .ad-tag {
+      font-size: 0.65rem; font-weight: 600; padding: 3px 9px; border-radius: 8px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--gray);
+    }
+    .ad-headline {
+      font-size: 0.95rem; font-weight: 700; line-height: 1.4;
+      padding: 14px 16px; border-radius: 10px; border-left: 3px solid;
+    }
+    .ad-body { font-family: 'DM Sans'; font-size: 0.8rem; color: var(--gray); line-height: 1.65; }
+    .ad-cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.78rem; font-weight: 700; margin-top: 4px;
+    }
+
+    /* ── SAVINGS TABLE ── */
+    .savings-table {
+      width: 100%; border-collapse: collapse;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden; margin-bottom: 48px;
+    }
+    .savings-table thead tr { background: var(--midnight-3); }
+    .savings-table th {
+      padding: 14px 20px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--gray); text-align: left;
+    }
+    .savings-table td {
+      padding: 12px 20px; font-size: 0.85rem; border-top: 1px solid var(--border);
+      font-family: 'DM Sans';
+    }
+    .savings-table td.price { font-weight: 700; font-family: 'Manrope'; }
+    .savings-table td.traditional { color: #ff8080; }
+    .savings-table td.homedirect { color: var(--green); font-weight: 700; font-family: 'Manrope'; }
+    .savings-table td.savings { color: var(--gold); font-weight: 800; font-family: 'Manrope'; }
+
+    /* ── OBJECTIONS ── */
+    .obj-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 48px; }
+    .obj-item {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px;
+    }
+    .obj-q { font-size: 0.88rem; font-weight: 700; margin-bottom: 10px; }
+    .obj-a { font-family: 'DM Sans'; font-size: 0.83rem; color: var(--gray); line-height: 1.65; }
+
+    /* ── CTA TABLE ── */
+    .cta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 48px; }
+    .cta-stage {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 22px;
+    }
+    .cta-stage-label {
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .cta-items { display: flex; flex-direction: column; gap: 10px; }
+    .cta-item { }
+    .cta-context { font-size: 0.7rem; color: var(--gray); font-family: 'DM Sans'; margin-bottom: 3px; }
+    .cta-text { font-size: 0.82rem; font-weight: 600; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .segment-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+      .segment-grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
+      .journey-grid { grid-template-columns: 1fr; }
+      .journey-act:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
+      .messaging-grid { grid-template-columns: 1fr; }
+      .ad-grid { grid-template-columns: 1fr; }
+      .cta-grid { grid-template-columns: 1fr; }
+      .channel-grid { grid-template-columns: repeat(2, 1fr); }
+      .panel-hero { grid-template-columns: 1fr; }
+      .panel-stats { flex-direction: row; flex-wrap: wrap; }
+      nav { padding: 0 1.25rem; }
+      .container { padding: 32px 1.25rem 60px; }
+    }
+    @media (max-width: 600px) {
+      .segment-grid.cols-3, .segment-grid.cols-4 { grid-template-columns: 1fr; }
+      .channel-grid { grid-template-columns: 1fr; }
+      .tab-btn { padding: 14px 14px; font-size: 0.74rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="nav-dot"></div>
+    HomeDirectAI — ICP Playbooks
+  </a>
+  <a class="nav-back" href="hub.html">← Back to Hub</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Three Audiences · One Brand · April 2026</div>
+  <h1>Same mission.<br /><em>Three different stories.</em></h1>
+  <p>The brand psychology, color system, and archetypes don't change. The hero, the pain, the channels, and the message shift entirely based on who you're talking to.</p>
+</section>
+
+<!-- TAB BAR -->
+<div class="tab-bar-wrap">
+  <div class="tab-bar">
+    <button class="tab-btn active-buyer" onclick="switchTab('buyer', this)" id="tab-buyer">Buyers</button>
+    <button class="tab-btn" onclick="switchTab('seller', this)" id="tab-seller">Sellers</button>
+    <button class="tab-btn" onclick="switchTab('concierge', this)" id="tab-concierge">Concierges</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- BUYER PANEL -->
+<!-- ════════════════════════════════════════ -->
+<div id="panel-buyer" class="panel active">
+  <div class="container">
+
+    <!-- Panel Hero -->
+    <div class="panel-hero">
+      <div>
+        <div class="panel-hero-eyebrow" style="color:var(--green)">Audience 01 · Buyers</div>
+        <h2>Search, tour, and close.<br />No agent required.</h2>
+        <p>Tampa Bay buyers are informed, motivated, and ready — and they're still being forced to pay $10,000+ to someone who earns more if they spend more. HomeDirectAI separates access, intelligence, and documentation from the agent fee that bundles all three.</p>
+        <blockquote class="panel-hero-quote" style="border-color:var(--green)">
+          "You've done the research. You know the neighborhoods. You have the down payment. And somehow, you still can't see a house without signing a contract with a stranger who earns more if you spend more. That's not a feature of the system. That's the system working as designed."
+        </blockquote>
+      </div>
+      <div class="panel-stats">
+        <div class="stat-box">
+          <div class="val" style="color:var(--gold)">$8,350</div>
+          <div class="lbl">Avg. buyer savings<br />on a $500K home</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" style="color:var(--green)">$20</div>
+          <div class="lbl">On-demand chaperone<br />showing</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" style="color:var(--teal)">3</div>
+          <div class="lbl">Buyer segments</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Segments -->
+    <div class="section-title" style="color:var(--green)">Buyer Segments</div>
+    <div class="segment-grid cols-3">
+
+      <div class="seg-card">
+        <span class="seg-tier" style="background:rgba(0,196,122,0.1);color:var(--green);border:1px solid rgba(0,196,122,0.2)">Tier 1 · Priority</span>
+        <div class="seg-name">Out-of-State Digital Relocator</div>
+        <div class="seg-demo">Age 28–48 · HHI $110–220K · Target $450–750K<br />NYC, NJ, Bay Area, LA, Chicago → Tampa Bay</div>
+        <blockquote class="seg-quote" style="border-color:var(--green)">
+          "I've been Zillow-surfing Tampa for three months from Brooklyn. I know Seminole Heights from South Tampa. I just need to see the inside without booking a flight every time an agent reschedules."
+        </blockquote>
+        <div class="seg-tag-row">
+          <span class="seg-tag">Remote-first</span>
+          <span class="seg-tag">Meta geo NY/NJ/CA</span>
+          <span class="seg-tag">LinkedIn</span>
+          <span class="seg-tag">Reddit r/floridamoving</span>
+        </div>
+        <div class="seg-position" style="background:rgba(0,196,122,0.07);color:var(--green)">
+          "HomeDirectAI is the buying platform for people who already know what they want and won't pay thousands for someone to unlock the door."
+        </div>
+      </div>
+
+      <div class="seg-card">
+        <span class="seg-tier" style="background:rgba(0,196,122,0.1);color:var(--green);border:1px solid rgba(0,196,122,0.2)">Tier 1 · Priority</span>
+        <div class="seg-name">Move-Up Millennial Buyer</div>
+        <div class="seg-demo">Age 32–42 · HHI $90–160K · Target $450–650K<br />Tampa Bay; owns starter home $280–380K</div>
+        <blockquote class="seg-quote" style="border-color:var(--green)">
+          "I bought my first place in 2019. I know what agents do and don't do. I'm not paying 3% again for someone to forward my offers and tell me the market is hot."
+        </blockquote>
+        <div class="seg-tag-row">
+          <span class="seg-tag">Meta local</span>
+          <span class="seg-tag">Reddit r/realestate</span>
+          <span class="seg-tag">BiggerPockets</span>
+          <span class="seg-tag">Email</span>
+        </div>
+        <div class="seg-position" style="background:rgba(0,196,122,0.07);color:var(--green)">
+          "HomeDirectAI is for buyers who've done the homework and shouldn't pay $10,000 for someone to carry the clipboard."
+        </div>
+      </div>
+
+      <div class="seg-card">
+        <span class="seg-tier" style="background:rgba(107,122,141,0.1);color:var(--gray);border:1px solid var(--border)">Tier 2</span>
+        <div class="seg-name">First-Time Tampa Bay Buyer</div>
+        <div class="seg-demo">Age 26–36 · HHI $70–110K · Target $325–480K<br />Renting in Tampa; Ybor, Hyde Park, St. Pete</div>
+        <blockquote class="seg-quote" style="border-color:var(--gray)">
+          "Every time I start the process, it feels like there's a step I'm missing — and I need someone to explain it, but that someone charges thousands of dollars."
+        </blockquote>
+        <div class="seg-tag-row">
+          <span class="seg-tag">TikTok</span>
+          <span class="seg-tag">Instagram</span>
+          <span class="seg-tag">Facebook Groups</span>
+          <span class="seg-tag">r/FirstTimeHomeBuyer</span>
+        </div>
+        <div class="seg-position" style="background:rgba(107,122,141,0.07);color:var(--gray)">
+          "HomeDirectAI is the knowledgeable friend you always wanted — shows you the math, handles the paperwork, never sends you a $10,000 invoice."
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Hero Journey -->
+    <div class="section-title" style="color:var(--green)">Buyer Hero Journey Arc</div>
+    <div class="journey-grid">
+      <div class="journey-act">
+        <div class="act-num">Act 1</div>
+        <div class="act-label" style="color:var(--gray)">The Broken System</div>
+        <div class="act-hook">"I know what I want. Why can't I just book a tour?"</div>
+        <div class="act-moments">
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gray)"></div>
+            <div><div class="moment-text">Researching neighborhoods at midnight — can't see any without signing a contract</div><div class="moment-emotion" style="color:var(--gray)">Excited → Frustrated</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gray)"></div>
+            <div><div class="moment-text">Learns buyer-agency agreement means owing $10K regardless of outcome</div><div class="moment-emotion" style="color:var(--gray)">Confused → Annoyed</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gray)"></div>
+            <div><div class="moment-text">Flies to Tampa for a showing the agent cancels — $600 in airfare wasted</div><div class="moment-emotion" style="color:var(--gray)">Angry</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gray)"></div>
+            <div><div class="moment-text">Runs the commission math: $12,000 to forward offers and unlock doors</div><div class="moment-emotion" style="color:var(--gray)">Shocked</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="journey-act" style="background:rgba(0,196,122,0.03)">
+        <div class="act-num">Act 2</div>
+        <div class="act-label" style="color:var(--green)">Discovery</div>
+        <div class="act-hook">"Wait, 1%? Let me see how this works."</div>
+        <div class="act-moments">
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--green)"></div>
+            <div><div class="moment-text">Sees traditional vs. HomeDirectAI cost comparison</div><div class="moment-emotion" style="color:var(--green)">Relieved, curious</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--green)"></div>
+            <div><div class="moment-text">Books a $20 chaperone showing — "That's it? Like Uber?"</div><div class="moment-emotion" style="color:var(--green)">Delighted</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--green)"></div>
+            <div><div class="moment-text">Runs AI comps on a listing they've been watching for weeks</div><div class="moment-emotion" style="color:var(--green)">Confident</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--green)"></div>
+            <div><div class="moment-text">Calculates $9,000 savings in real dollars</div><div class="moment-emotion" style="color:var(--green)">Motivated</div></div>
+          </div>
+        </div>
+        <div class="act-voice" style="border-color:var(--green)">
+          "HomeDirectAI isn't a shortcut. It's what the process would look like if it were designed for the buyer, not built around the agent."
+        </div>
+      </div>
+      <div class="journey-act">
+        <div class="act-num">Act 3</div>
+        <div class="act-label" style="color:var(--gold)">Transformation</div>
+        <div class="act-hook">"I did this. And I saved $9,000."</div>
+        <div class="act-moments">
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gold)"></div>
+            <div><div class="moment-text">Closes at $500K — paid 1%, not 2.67%. Savings sitting in emergency fund.</div><div class="moment-emotion" style="color:var(--gold)">Proud, relieved</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gold)"></div>
+            <div><div class="moment-text">Tells friends: "It's like DoorDash for home tours. You have to use it."</div><div class="moment-emotion" style="color:var(--gold)">Evangelical</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gold)"></div>
+            <div><div class="moment-text">Understood every document they signed — "that's different from most people"</div><div class="moment-emotion" style="color:var(--gold)">Transformed</div></div>
+          </div>
+        </div>
+        <div class="act-voice" style="border-color:var(--gold)">
+          "You bought a home in Tampa and know exactly what you paid for. No hidden fees. No one taking a percentage of your biggest financial decision."
+        </div>
+      </div>
+    </div>
+
+    <!-- Messaging -->
+    <div class="section-title" style="color:var(--green)">Messaging Framework</div>
+    <div class="messaging-grid">
+      <div class="msg-card">
+        <h4 style="color:var(--green)">6 Headline Frameworks</h4>
+        <div class="headline-list">
+          <div class="headline-item" style="border-color:var(--gold)">
+            <div class="headline-label">Math Drop · Retargeting</div>
+            <div class="headline-text">"You'll pay $13,350 to a buyer's agent on a $500K home. Or 1%. You choose."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--green)">
+            <div class="headline-label">Access Unlock · Rebel · TOFU</div>
+            <div class="headline-text">"You don't need an agent to see a house. You need $20 and 10 minutes."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--teal)">
+            <div class="headline-label">Research Peer · Sage · MOFU</div>
+            <div class="headline-text">"You already know the neighborhood. The AI knows every comp in it."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--gray)">
+            <div class="headline-label">Relocator Hook · Out-of-State</div>
+            <div class="headline-text">"You shouldn't have to book a flight to see a house. Book a $20 chaperone instead."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--gray)">
+            <div class="headline-label">Post-NAR Reframe · Sage/Rebel</div>
+            <div class="headline-text">"The NAR settlement promised buyers lower fees. Agents are charging more than ever."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--green)">
+            <div class="headline-label">First-Time Hero · Hero</div>
+            <div class="headline-text">"First-time buyer doesn't mean first-time disadvantaged. The AI knows every step."</div>
+          </div>
+        </div>
+      </div>
+      <div class="msg-card">
+        <h4 style="color:var(--green)">Voice · Words to Use / Avoid</h4>
+        <table class="word-table">
+          <tr><td class="word-use">Book a showing</td><td>Removes agent friction from language</td></tr>
+          <tr><td class="word-use">1% closing fee</td><td>"Commission" implies agent structure — "fee" is direct</td></tr>
+          <tr><td class="word-use">Keep the difference</td><td>Specific and active vs. generic "save money"</td></tr>
+          <tr><td class="word-use">On your schedule</td><td>Buyer-centric framing vs. feature description</td></tr>
+          <tr><td class="word-use">Data-backed offer</td><td>Specific to HomeDirectAI advantage</td></tr>
+          <tr><td class="word-use">Your offer</td><td>Reinforces buyer ownership of the process</td></tr>
+          <tr><td class="word-avoid">Low commission</td><td>"Commission" implies traditional agent structure</td></tr>
+          <tr><td class="word-avoid">Automated valuation</td><td>Jargon — "AI comps" is buyer-native language</td></tr>
+          <tr><td class="word-avoid">Flexible showings</td><td>Feature description, not buyer-centric</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Savings Table -->
+    <div class="section-title" style="color:var(--green)">Savings Calculator</div>
+    <table class="savings-table">
+      <thead><tr>
+        <th>Home Price</th><th>Agent Cost (2.67%)</th><th>HomeDirectAI (1%)</th><th>Buyer Saves</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="price">$325,000</td><td class="traditional">$8,677</td><td class="homedirect">$3,250</td><td class="savings">$5,427</td></tr>
+        <tr><td class="price">$400,000</td><td class="traditional">$10,680</td><td class="homedirect">$4,000</td><td class="savings">$6,680</td></tr>
+        <tr><td class="price">$500,000</td><td class="traditional">$13,350</td><td class="homedirect">$5,000</td><td class="savings">$8,350</td></tr>
+        <tr><td class="price">$600,000</td><td class="traditional">$16,020</td><td class="homedirect">$6,000</td><td class="savings">$10,020</td></tr>
+        <tr><td class="price">$650,000</td><td class="traditional">$17,355</td><td class="homedirect">$6,500</td><td class="savings">$10,855</td></tr>
+        <tr><td class="price">$750,000</td><td class="traditional">$20,025</td><td class="homedirect">$7,500</td><td class="savings">$12,525</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Ad Concepts -->
+    <div class="section-title" style="color:var(--green)">Ad Creative Concepts</div>
+    <div class="ad-grid">
+      <div class="ad-card">
+        <div class="ad-label">Concept 01</div>
+        <div class="ad-name">The Math Ad</div>
+        <div class="ad-meta">
+          <span class="ad-tag">Move-Up Millennial + Relocator</span>
+          <span class="ad-tag">TOFU/MOFU</span>
+          <span class="ad-tag">Meta · LinkedIn</span>
+        </div>
+        <div class="ad-headline" style="background:rgba(0,196,122,0.06);border-color:var(--green);color:var(--offwhite)">
+          "Your buyer's agent costs $13,350 on a $500K home. HomeDirectAI costs $5,000. The math isn't complicated."
+        </div>
+        <div class="ad-body">Dark slate bg. Two columns: Traditional (red/crossed out) vs. HomeDirectAI (green). Center: savings amount in Savings Gold. Video: calculator types $13,350 → $5,000 → $8,350 animated in gold.</div>
+        <div class="ad-cta" style="color:var(--green)">CTA: "Run your number →"</div>
+      </div>
+      <div class="ad-card">
+        <div class="ad-label">Concept 02</div>
+        <div class="ad-name">The Flight</div>
+        <div class="ad-meta">
+          <span class="ad-tag">Out-of-State Relocator</span>
+          <span class="ad-tag">TOFU</span>
+          <span class="ad-tag">Meta geo NY/NJ/CA · LinkedIn</span>
+        </div>
+        <div class="ad-headline" style="background:rgba(0,196,122,0.06);border-color:var(--green);color:var(--offwhite)">
+          "You shouldn't have to book a flight to see a house."
+        </div>
+        <div class="ad-body">Split screen: boarding pass left / $20 HomeDirectAI showing confirmation right. "You know South Tampa from Westchase. You just need to see the inside." Retargeting variant inserts their origin city dynamically.</div>
+        <div class="ad-cta" style="color:var(--green)">CTA: "Book a Tampa showing — no flight required →"</div>
+      </div>
+      <div class="ad-card">
+        <div class="ad-label">Concept 03</div>
+        <div class="ad-name">DoorDash for Home Tours</div>
+        <div class="ad-meta">
+          <span class="ad-tag">First-Time Buyer</span>
+          <span class="ad-tag">TOFU</span>
+          <span class="ad-tag">TikTok · Instagram Reels · YouTube Shorts</span>
+        </div>
+        <div class="ad-headline" style="background:rgba(0,196,122,0.06);border-color:var(--teal);color:var(--offwhite)">
+          "Okay, real talk. Home showings now work like food delivery."
+        </div>
+        <div class="ad-body">30-sec vertical, UGC-style. "Find a house on Zillow. Book a showing. For $20, someone meets you there tomorrow. No agent contract. No $12,000 door-unlocking fee. First-time buyer doesn't mean you do it the expensive way."</div>
+        <div class="ad-cta" style="color:var(--teal)">CTA: "Book your first showing — $20"</div>
+      </div>
+      <div class="ad-card">
+        <div class="ad-label">Concept 04</div>
+        <div class="ad-name">The NAR Settlement Didn't Save You</div>
+        <div class="ad-meta">
+          <span class="ad-tag">Move-Up Millennial · Relocator</span>
+          <span class="ad-tag">MOFU</span>
+          <span class="ad-tag">Reddit · LinkedIn · Long-form Facebook</span>
+        </div>
+        <div class="ad-headline" style="background:rgba(0,196,122,0.06);border-color:var(--gold);color:var(--offwhite)">
+          "The NAR settlement was supposed to lower what buyers pay agents. Commissions just hit a new high."
+        </div>
+        <div class="ad-body">Sage archetype at maximum. Long-form native content: shows the data, names the gap between what was promised and what happened. "Average combined commission: 5.44% — up from 5.32% pre-settlement." Financially literate buyers will forward this.</div>
+        <div class="ad-cta" style="color:var(--gold)">CTA: "See how much you'd save on your target price →"</div>
+      </div>
+    </div>
+
+    <!-- Channels -->
+    <div class="section-title" style="color:var(--green)">Channel Strategy</div>
+    <div class="channel-grid">
+      <div class="channel-card"><div class="channel-name">Meta (Facebook/Instagram)</div><div class="channel-segment">All three segments</div><span class="channel-priority p1">P1</span><div class="channel-note">Largest reach. Geo-target origin markets (NY, NJ, CA) + Tampa. Retarget with savings math at price range.</div></div>
+      <div class="channel-card"><div class="channel-name">Google Search (SEM)</div><div class="channel-segment">All three · BOFU</div><span class="channel-priority p1">P1</span><div class="channel-note">High-intent: "buy home without realtor Tampa," "buyer agent fee Tampa," "do I need a buyer's agent 2025"</div></div>
+      <div class="channel-card"><div class="channel-name">Reddit</div><div class="channel-segment">Relocators · Move-Up</div><span class="channel-priority p1">P1</span><div class="channel-note">r/tampa, r/FirstTimeHomeBuyer, r/personalfinance, r/floridamoving. Alex voice. Organic first, 60–90 days.</div></div>
+      <div class="channel-card"><div class="channel-name">Email (Owned)</div><div class="channel-segment">All three · MOFU/BOFU</div><span class="channel-priority p1">P1</span><div class="channel-note">Highest ROI. 6-email nurture from showing booking to offer. Personalized savings number in subject line.</div></div>
+      <div class="channel-card"><div class="channel-name">YouTube</div><div class="channel-segment">All three · TOFU</div><span class="channel-priority p2">P2</span><div class="channel-note">Neighborhood/market explainers. Pre-roll on Tampa real estate content. 5–10 min organic walkthroughs.</div></div>
+      <div class="channel-card"><div class="channel-name">TikTok</div><div class="channel-segment">First-Time Buyers</div><span class="channel-priority p2">P2</span><div class="channel-note">Real estate education content. UGC-style 30-sec videos. "How to buy a house without an agent" angle.</div></div>
+    </div>
+
+    <!-- Objections -->
+    <div class="section-title" style="color:var(--green)">Objection Handling</div>
+    <div class="obj-list">
+      <div class="obj-item">
+        <div class="obj-q" style="color:var(--green)">"Without an agent, I'll overpay."</div>
+        <div class="obj-a">Buyer's agents are compensated as a % of purchase price — they benefit when you pay more. HomeDirectAI's AI negotiation is based on Tampa Bay transaction data, comps, days on market, and seller concession trends — with zero financial incentive to push toward a higher price. The $9,000 you're not paying stays in your pocket regardless.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q" style="color:var(--green)">"The chaperone can't answer my questions about the house."</div>
+        <div class="obj-a">Here's what happens at a traditional showing: you ask about the school district, the agent says "great question, I'll look that up." The chaperone gets you in for $20. The AI answers school ratings, flood zone, HOA, recent sales, and estimated repair costs before you walk in. You arrive informed, not dependent.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q" style="color:var(--green)">"I'm a first-time buyer — I don't know enough to do this without help."</div>
+        <div class="obj-a">The complexity of home buying is real — but it's process complexity, not expertise complexity. It's documentation, deadlines, and disclosures — all managed by the platform. Every step has a plain-language explanation. First-time buyers who use HomeDirectAI leave understanding every document they signed. That's different from most buyers who used an agent.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SELLER PANEL -->
+<!-- ════════════════════════════════════════ -->
+<div id="panel-seller" class="panel">
+  <div class="container">
+
+    <!-- Panel Hero -->
+    <div class="panel-hero">
+      <div>
+        <div class="panel-hero-eyebrow" style="color:var(--gold)">Audience 02 · Sellers</div>
+        <h2>List at 1%.<br />Keep $19,000 more.</h2>
+        <p>Tampa Bay sellers are preparing for a $430K transaction and have no idea they're about to hand $24,000 to two agents — one of whom they never hired. For the Commission-Awakened seller, the retroactive realization — "I paid this on every transaction" — is the gut-punch that converts browsers to buyers.</p>
+        <blockquote class="panel-hero-quote" style="border-color:var(--gold)">
+          "Most Tampa Bay sellers walk away from closing having paid $20,000–$24,000 in commissions. About half had no idea half of that went to the buyer's agent — the person working against them at the negotiating table."
+        </blockquote>
+      </div>
+      <div class="panel-stats">
+        <div class="stat-box">
+          <div class="val" style="color:var(--gold)">$19,650</div>
+          <div class="lbl">Net savings vs. traditional<br />on a $430K sale</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" style="color:var(--green)">5.57%</div>
+          <div class="lbl">Tampa avg. commission<br />vs. HomeDirectAI 1%</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" style="color:var(--teal)">4</div>
+          <div class="lbl">Seller segments</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Segments -->
+    <div class="section-title" style="color:var(--gold)">Seller Segments</div>
+    <div class="segment-grid cols-4">
+
+      <div class="seg-card">
+        <span class="seg-tier" style="background:rgba(245,200,66,0.1);color:var(--gold);border:1px solid rgba(245,200,66,0.2)">Tier 1 · Hero</span>
+        <div class="seg-name">Equity-Motivated Move-Up Millennial</div>
+        <div class="seg-demo">Age 32–42 · HHI $90–160K · Home $350–550K<br />South Tampa, Westchase, Wesley Chapel</div>
+        <div class="seg-tag-row">
+          <span class="seg-tag">Google Search</span>
+          <span class="seg-tag">Reddit</span>
+          <span class="seg-tag">BiggerPockets</span>
+        </div>
+        <div class="seg-position" style="background:rgba(245,200,66,0.07);color:var(--gold)">
+          "You've got $120K in equity and a $24,000 commission bill coming. The AI handles negotiation, docs, and disclosures. A $20/hr chaperone shows your home. You pay 1%. Run the math."
+        </div>
+      </div>
+
+      <div class="seg-card">
+        <span class="seg-tier" style="background:rgba(245,200,66,0.1);color:var(--gold);border:1px solid rgba(245,200,66,0.2)">Tier 1 · Rebel</span>
+        <div class="seg-name">Commission-Awakened Repeat Seller</div>
+        <div class="seg-demo">Age 45–62 · HHI $100–200K · Home $450–800K<br />2–4 prior sales; cumulative commission: $60–100K+</div>
+        <div class="seg-tag-row">
+          <span class="seg-tag">Facebook</span>
+          <span class="seg-tag">YouTube</span>
+          <span class="seg-tag">Email nurture</span>
+        </div>
+        <div class="seg-position" style="background:rgba(245,200,66,0.07);color:var(--gold)">
+          "You've paid commissions on 3 homes. You just found out half went to the buyer's agent — the one working against you. This time, keep it."
+        </div>
+      </div>
+
+      <div class="seg-card">
+        <span class="seg-tier" style="background:rgba(107,122,141,0.1);color:var(--gray);border:1px solid var(--border)">Tier 2 · Sage</span>
+        <div class="seg-name">Active Investor / House Flipper</div>
+        <div class="seg-demo">Age 30–55 · 2–10+ sales/year · $300–600K range<br />Seminole Heights, Ybor, Temple Terrace flips</div>
+        <div class="seg-tag-row">
+          <span class="seg-tag">BiggerPockets</span>
+          <span class="seg-tag">FB Investor Groups</span>
+          <span class="seg-tag">Email ROI content</span>
+        </div>
+        <div class="seg-position" style="background:rgba(107,122,141,0.07);color:var(--gray)">
+          "5 flips last year. 5.57% commission each time. That's $91K you paid in commissions. HomeDirectAI charges 1%. Model what that does to your annual net."
+        </div>
+      </div>
+
+      <div class="seg-card">
+        <span class="seg-tier" style="background:rgba(107,122,141,0.1);color:var(--gray);border:1px solid var(--border)">Tier 2 · Hero+Sage</span>
+        <div class="seg-name">FSBO Upgrader</div>
+        <div class="seg-demo">Age 35–58 · Home $250–500K<br />Tried Zillow FSBO; 30–90 days, no offer or panicked at contract</div>
+        <div class="seg-tag-row">
+          <span class="seg-tag">Google Search</span>
+          <span class="seg-tag">FSBO forums</span>
+          <span class="seg-tag">Comparison sites</span>
+        </div>
+        <div class="seg-position" style="background:rgba(107,122,141,0.07);color:var(--gray)">
+          "FSBO felt right until the contract showed up. HomeDirectAI handles negotiation, paperwork, and disclosures — you still pay 1%. Not 5.5%. Not nothing."
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Hero Journey -->
+    <div class="section-title" style="color:var(--gold)">Seller Hero Journey Arc</div>
+    <div class="journey-grid">
+      <div class="journey-act">
+        <div class="act-num">Act 1</div>
+        <div class="act-label" style="color:var(--gray)">The Current Pain</div>
+        <div class="act-hook">"I'm about to pay $24,000 and I don't fully understand why."</div>
+        <div class="act-moments">
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gray)"></div>
+            <div><div class="moment-text">49% of sellers didn't know they were paying the buyer's agent commission</div><div class="moment-emotion" style="color:var(--gray)">Uninformed → Shocked</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gray)"></div>
+            <div><div class="moment-text">$23,950 commission bill on a $430K home — half to an agent they never hired</div><div class="moment-emotion" style="color:var(--gray)">Angry</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gray)"></div>
+            <div><div class="moment-text">Commission-Awakened: cumulative lifetime total hits — $60K, $80K, $100K+</div><div class="moment-emotion" style="color:var(--gray)">Righteously furious</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gray)"></div>
+            <div><div class="moment-text">FSBO route explored — agent-listed homes sell for $55K more than FSBO</div><div class="moment-emotion" style="color:var(--gray)">Trapped</div></div>
+          </div>
+        </div>
+        <div class="act-voice" style="border-color:var(--gray)">
+          "The system was built by agents, for agents. The rules haven't changed in 50 years. Until now."
+        </div>
+      </div>
+      <div class="journey-act" style="background:rgba(245,200,66,0.025)">
+        <div class="act-num">Act 2</div>
+        <div class="act-label" style="color:var(--gold)">The Third Option</div>
+        <div class="act-hook">"Pay 5.5%. Go FSBO and lose $55K. Or..."</div>
+        <div class="act-moments">
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gold)"></div>
+            <div><div class="moment-text">Discovers HomeDirectAI via Google, Nextdoor, or Facebook — skeptical</div><div class="moment-emotion" style="color:var(--gold)">Curious, cautious</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gold)"></div>
+            <div><div class="moment-text">AI comp analysis explained — trained on Tampa Bay transactions, pricing confidence score</div><div class="moment-emotion" style="color:var(--gold)">Reassured</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gold)"></div>
+            <div><div class="moment-text">Chaperone model explained — seller never coordinates a showing</div><div class="moment-emotion" style="color:var(--gold)">Relieved</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gold)"></div>
+            <div><div class="moment-text">Investor runs the model: 5 flips × 4.57% savings = $91K/year retained</div><div class="moment-emotion" style="color:var(--gold)">Convinced</div></div>
+          </div>
+        </div>
+        <div class="act-voice" style="border-color:var(--gold)">
+          "The NAR settlement cracked open a 50-year-old model. AI made a real alternative possible. There's a third option — and it's the one industry spent a decade trying to prevent."
+        </div>
+      </div>
+      <div class="journey-act">
+        <div class="act-num">Act 3</div>
+        <div class="act-label" style="color:var(--green)">Closing With $19K More</div>
+        <div class="act-hook">"Closed at $432,000. Paid $4,320. That's $19,630 back."</div>
+        <div class="act-moments">
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--green)"></div>
+            <div><div class="moment-text">Millennial: $19,650 toward down payment on larger next home</div><div class="moment-emotion" style="color:var(--green)">Proud, smart</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--green)"></div>
+            <div><div class="moment-text">Commission-Awakened: justice — and a dinner party story that converts friends</div><div class="moment-emotion" style="color:var(--green)">Evangelical</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--green)"></div>
+            <div><div class="moment-text">Investor: $98,250/year retained across 5 transactions</div><div class="moment-emotion" style="color:var(--green)">Compounding advantage</div></div>
+          </div>
+        </div>
+        <div class="act-voice" style="border-color:var(--green)">
+          "AI negotiated. A chaperone showed the house. You approved the deal from your phone. This is what selling a home looks like now."
+        </div>
+      </div>
+    </div>
+
+    <!-- Messaging -->
+    <div class="section-title" style="color:var(--gold)">Messaging Framework</div>
+    <div class="messaging-grid">
+      <div class="msg-card">
+        <h4 style="color:var(--gold)">6 Headline Frameworks</h4>
+        <div class="headline-list">
+          <div class="headline-item" style="border-color:var(--gold)">
+            <div class="headline-label">Math Drop · Search / Facebook</div>
+            <div class="headline-text">"Tampa sellers pay $23,950 in commissions. HomeDirectAI charges $4,300. The difference is yours."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--gold)">
+            <div class="headline-label">System Reveal · Commission-Awakened</div>
+            <div class="headline-text">"You were paying the buyer's agent too. For every transaction. HomeDirectAI changes that."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--gray)">
+            <div class="headline-label">Third Option · YouTube · Retargeting</div>
+            <div class="headline-text">"Pay 5.5% to an agent. Go FSBO and lose $55K. Or list with HomeDirectAI and keep both."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--teal)">
+            <div class="headline-label">AI Proof · How It Works / Email</div>
+            <div class="headline-text">"AI trained on 10,000+ Tampa Bay transactions priced your home, wrote the contract, and counter-offered in real time."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--green)">
+            <div class="headline-label">Equity Reframe · Instagram / Email</div>
+            <div class="headline-text">"$19,650 is a semester of college. A year of car payments. Stop leaving it at the closing table."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--gray)">
+            <div class="headline-label">Investor ROI · BiggerPockets / Email</div>
+            <div class="headline-text">"5 flips. 5.57% commission each time. That's $91,000 you paid last year that you didn't have to."</div>
+          </div>
+        </div>
+      </div>
+      <div class="msg-card">
+        <h4 style="color:var(--gold)">Alex's Voice for Sellers</h4>
+        <table class="word-table">
+          <tr><td class="word-use">Keep $19,650 more</td><td>Not "discount" — positions as smart, not cheap</td></tr>
+          <tr><td class="word-use">AI handles negotiation</td><td>Specific capability — never vague</td></tr>
+          <tr><td class="word-use">You approve every step</td><td>Addresses control anxiety directly</td></tr>
+          <tr><td class="word-use">On a $430K home...</td><td>Anchors to real, local Tampa numbers</td></tr>
+          <tr><td class="word-use">Traditional agent commission</td><td>Not adversarial; factual framing</td></tr>
+          <tr><td class="word-avoid">Discount / cheap</td><td>Positions as bargain, not smart choice</td></tr>
+          <tr><td class="word-avoid">Easy / simple / just</td><td>Minimizes a $430K transaction — breaks trust</td></tr>
+          <tr><td class="word-avoid">Robot / algorithm</td><td>Cold, untrustworthy framing of AI</td></tr>
+          <tr><td class="word-avoid">Disruptive / game-changing</td><td>Vague tech-bro language — Alex never says this</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Channels -->
+    <div class="section-title" style="color:var(--gold)">Channel Strategy</div>
+    <div class="channel-grid">
+      <div class="channel-card"><div class="channel-name">Google Search (SEM)</div><div class="channel-segment">All segments · BOFU</div><span class="channel-priority p1">P1</span><div class="channel-note">"How much do realtors charge in Tampa," "sell home without agent Tampa," "alternatives to real estate agents." Intercept the research phase.</div></div>
+      <div class="channel-card"><div class="channel-name">Facebook</div><div class="channel-segment">Commission-Awakened · Millennial</div><span class="channel-priority p1">P1</span><div class="channel-note">Primary research platform for 45–62 demo. Facebook groups, news shares, paid ads. Longer-form content performs well here.</div></div>
+      <div class="channel-card"><div class="channel-name">YouTube</div><div class="channel-segment">All segments</div><span class="channel-priority p1">P1</span><div class="channel-note">5–10 min explainers for Commission-Awakened. "Third option" framing. Pre-roll on HGTV-adjacent and personal finance content.</div></div>
+      <div class="channel-card"><div class="channel-name">Email Nurture</div><div class="channel-segment">All segments · MOFU/BOFU</div><span class="channel-priority p1">P1</span><div class="channel-note">High open rates for repeat sellers. Personalized savings number in subject line. 6-email sequence from calculator to listing start.</div></div>
+      <div class="channel-card"><div class="channel-name">NextDoor</div><div class="channel-segment">All Tampa segments</div><span class="channel-priority p2">P2</span><div class="channel-note">"Did you know you pay both agents?" — fact-first framing. Promoted posts in target Tampa neighborhoods.</div></div>
+      <div class="channel-card"><div class="channel-name">BiggerPockets / Investor Email</div><div class="channel-segment">Investor/Flipper</div><span class="channel-priority p2">P2</span><div class="channel-note">Operator-level ROI content. Case studies with actual deal math. Annualized commission savings across transaction volume.</div></div>
+    </div>
+
+    <!-- Ad Concepts -->
+    <div class="section-title" style="color:var(--gold)">Ad Creative Concepts</div>
+    <div class="ad-grid">
+      <div class="ad-card">
+        <div class="ad-label">Concept 01</div>
+        <div class="ad-name">The Math Drop</div>
+        <div class="ad-meta">
+          <span class="ad-tag">All Sellers</span>
+          <span class="ad-tag">Search Ads · Facebook · Savings Calculator LP</span>
+        </div>
+        <div class="ad-headline" style="background:rgba(245,200,66,0.06);border-color:var(--gold);color:var(--offwhite)">
+          "Tampa sellers pay $23,950 in commissions. HomeDirectAI charges $4,300. The difference is yours."
+        </div>
+        <div class="ad-body">Savings Gold (#F5C842) on the difference number. Two-column comparison. Drives to savings calculator — lowest friction entry. "Enter your home value → see what you'd keep."</div>
+        <div class="ad-cta" style="color:var(--gold)">CTA: "See What You'd Keep →"</div>
+      </div>
+      <div class="ad-card">
+        <div class="ad-label">Concept 02</div>
+        <div class="ad-name">The System Reveal</div>
+        <div class="ad-meta">
+          <span class="ad-tag">Commission-Awakened · 45–62</span>
+          <span class="ad-tag">Facebook · YouTube Pre-roll · Email Subject</span>
+        </div>
+        <div class="ad-headline" style="background:rgba(245,200,66,0.06);border-color:var(--gold);color:var(--offwhite)">
+          "You were paying the buyer's agent too. For every transaction. HomeDirectAI changes that."
+        </div>
+        <div class="ad-body">Rebel archetype activation — directed at the system, not individual agents (brand guardrail). The retroactive math ("$60K over a lifetime of moves") is the gut-punch. Drives to explainer content, then listing CTA.</div>
+        <div class="ad-cta" style="color:var(--gold)">CTA: "Show Me the Math →"</div>
+      </div>
+      <div class="ad-card">
+        <div class="ad-label">Concept 03</div>
+        <div class="ad-name">The Third Option</div>
+        <div class="ad-meta">
+          <span class="ad-tag">FSBO Upgrader · Millennial</span>
+          <span class="ad-tag">YouTube Mid-roll · Comparison LPs · Retargeting</span>
+        </div>
+        <div class="ad-headline" style="background:rgba(245,200,66,0.06);border-color:var(--teal);color:var(--offwhite)">
+          "Pay 5.5% to an agent. Go FSBO and lose $55K. Or list with HomeDirectAI and keep both."
+        </div>
+        <div class="ad-body">Three-way comparison: Full agent (too expensive) vs. FSBO (too risky, $55K price gap) vs. HomeDirectAI (agent-caliber outcome at 1%). The industry didn't want sellers to find the third option.</div>
+        <div class="ad-cta" style="color:var(--teal)">CTA: "Your Home Could Be Listed Today"</div>
+      </div>
+      <div class="ad-card">
+        <div class="ad-label">Concept 04</div>
+        <div class="ad-name">The Investor ROI Frame</div>
+        <div class="ad-meta">
+          <span class="ad-tag">Investor/Flipper</span>
+          <span class="ad-tag">BiggerPockets · Investor Email Lists · LinkedIn</span>
+        </div>
+        <div class="ad-headline" style="background:rgba(245,200,66,0.06);border-color:var(--gold);color:var(--offwhite)">
+          "5 flips. 5.57% commission each time. That's $91,000 you paid last year that you didn't have to."
+        </div>
+        <div class="ad-body">Sage archetype. Operator-level language: ARV, net-to-list ratio, cost per transaction. Model it across transaction volume. Targets Facebook Tampa Bay RE Investors groups + BiggerPockets channel. Data-led cold outreach.</div>
+        <div class="ad-cta" style="color:var(--gold)">CTA: "Model Your Annual Net →"</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- CONCIERGE PANEL -->
+<!-- ════════════════════════════════════════ -->
+<div id="panel-concierge" class="panel">
+  <div class="container">
+
+    <!-- Panel Hero -->
+    <div class="panel-hero">
+      <div>
+        <div class="panel-hero-eyebrow" style="color:var(--teal)">Audience 03 · Concierges</div>
+        <h2>Your Tampa knowledge<br />finally has a dollar value.</h2>
+        <p>Tampa Bay processes 3,000+ home sales per month — every one of those buyers tours homes first. HomeDirectAI's $20 gig-economy showing model creates a new category of flexible professional work for Tampa locals who are underearning on delivery apps, underutilizing their neighborhood knowledge, or trying to break into real estate.</p>
+        <blockquote class="panel-hero-quote" style="border-color:var(--teal)">
+          "Your Tampa knowledge is worth $20 every time you open a door."
+        </blockquote>
+      </div>
+      <div class="panel-stats">
+        <div class="stat-box">
+          <div class="val" style="color:var(--gold)">$20</div>
+          <div class="lbl">Per showing<br />30–45 min</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" style="color:var(--teal)">$40/hr</div>
+          <div class="lbl">Effective rate<br />30-min showings</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" style="color:var(--green)">3</div>
+          <div class="lbl">Concierge segments</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Segments -->
+    <div class="section-title" style="color:var(--teal)">Concierge Segments</div>
+    <div class="segment-grid cols-3">
+
+      <div class="seg-card">
+        <span class="seg-tier" style="background:rgba(0,212,255,0.1);color:var(--teal);border:1px solid rgba(0,212,255,0.2)">Tier 1 · Primary Target</span>
+        <div class="seg-name">The Gig Upgrader</div>
+        <div class="seg-demo">Age 22–40 · Active DoorDash/Uber/Instacart driver<br />80+ miles/day · $19–25/hr gross before gas</div>
+        <blockquote class="seg-quote" style="border-color:var(--teal)">
+          "I drove 80 miles today and made $22/hr before gas. That math doesn't work."
+        </blockquote>
+        <div class="seg-tag-row">
+          <span class="seg-tag">TikTok</span>
+          <span class="seg-tag">Facebook Gig Groups</span>
+          <span class="seg-tag">r/doordash_drivers</span>
+        </div>
+        <div class="seg-position" style="background:rgba(0,212,255,0.07);color:var(--teal)">
+          "DoorDash paid me $22/hr and put 90 miles on my car. This pays the same and I drove 4 miles."
+        </div>
+      </div>
+
+      <div class="seg-card">
+        <span class="seg-tier" style="background:rgba(0,212,255,0.1);color:var(--teal);border:1px solid rgba(0,212,255,0.2)">Tier 1 · Primary Target</span>
+        <div class="seg-name">The Tampa Local</div>
+        <div class="seg-demo">Age 25–55 · Stay-at-home parent, part-timer, or retiree<br />Deep neighborhood knowledge; underutilized time</div>
+        <blockquote class="seg-quote" style="border-color:var(--teal)">
+          "Someone just moved into our neighborhood and paid $450K. They had no idea which streets are best. I could have told them."
+        </blockquote>
+        <div class="seg-tag-row">
+          <span class="seg-tag">Nextdoor</span>
+          <span class="seg-tag">Local FB Groups</span>
+          <span class="seg-tag">HOA Newsletters</span>
+        </div>
+        <div class="seg-position" style="background:rgba(0,212,255,0.07);color:var(--teal)">
+          "You already know every neighborhood in Tampa Bay. Now get paid $20 every time you show one."
+        </div>
+      </div>
+
+      <div class="seg-card">
+        <span class="seg-tier" style="background:rgba(107,122,141,0.1);color:var(--gray);border:1px solid var(--border)">Tier 2</span>
+        <div class="seg-name">The Real Estate Aspirant</div>
+        <div class="seg-demo">Age 22–35 · Pre-license or exploring RE career<br />Studying 63-hr FL coursework; needs an on-ramp</div>
+        <blockquote class="seg-quote" style="border-color:var(--gray)">
+          "I've done 50 showings and I know Seminole Heights better than any agent in Tampa."
+        </blockquote>
+        <div class="seg-tag-row">
+          <span class="seg-tag">Indeed</span>
+          <span class="seg-tag">LinkedIn</span>
+          <span class="seg-tag">BiggerPockets</span>
+          <span class="seg-tag">r/realestate</span>
+        </div>
+        <div class="seg-position" style="background:rgba(107,122,141,0.07);color:var(--gray)">
+          "Can't get into real estate without a license? There's a side door."
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Hero Journey -->
+    <div class="section-title" style="color:var(--teal)">Concierge Hero Journey Arc</div>
+    <div class="journey-grid">
+      <div class="journey-act">
+        <div class="act-num">Act 1</div>
+        <div class="act-label" style="color:var(--gray)">Stuck — The Old Story</div>
+        <div class="act-hook">"This isn't working. There has to be something better."</div>
+        <div class="act-moments">
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gray)"></div>
+            <div><div class="moment-text">Gig Upgrader: 80 miles/day destroying resale value; surge pricing random; $22/hr before gas</div><div class="moment-emotion" style="color:var(--gray)">Frustrated, resentful</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gray)"></div>
+            <div><div class="moment-text">Tampa Local: knows every neighborhood but no one has ever paid them for it</div><div class="moment-emotion" style="color:var(--gray)">Undervalued</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gray)"></div>
+            <div><div class="moment-text">RE Aspirant: 63-hr license requirement; no way to "try" real estate; income gap while studying</div><div class="moment-emotion" style="color:var(--gray)">Stuck, impatient</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gray)"></div>
+            <div><div class="moment-text">The crack: "I drove 80 miles and made $22/hr before gas. That math doesn't work."</div><div class="moment-emotion" style="color:var(--gray)">Looking for alternatives</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="journey-act" style="background:rgba(0,212,255,0.025)">
+        <div class="act-num">Act 2</div>
+        <div class="act-label" style="color:var(--teal)">Discovery</div>
+        <div class="act-hook">"Wait. I could actually get paid to do this?"</div>
+        <div class="act-moments">
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--teal)"></div>
+            <div><div class="moment-text">Encounters TikTok comparison: "No mileage. No food spills. $20 every time you open a door."</div><div class="moment-emotion" style="color:var(--teal)">Curious, cautious</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--teal)"></div>
+            <div><div class="moment-text">Runs the earnings math: $20 × 20 showings/week = $400/week, 4 miles vs. 80</div><div class="moment-emotion" style="color:var(--teal)">Calculating</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--teal)"></div>
+            <div><div class="moment-text">Checks legitimacy — social proof from other concierges, reviews, "day in the life" content</div><div class="moment-emotion" style="color:var(--teal)">Due diligence</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--teal)"></div>
+            <div><div class="moment-text">Applies in 5 minutes — background check + orientation; no experience required</div><div class="moment-emotion" style="color:var(--teal)">Cautiously optimistic</div></div>
+          </div>
+        </div>
+        <div class="act-voice" style="border-color:var(--teal)">
+          Specificity converts. "Earn money in real estate" doesn't convert. "$20 per showing, 30–45 minutes, no license required" does.
+        </div>
+      </div>
+      <div class="journey-act">
+        <div class="act-num">Act 3</div>
+        <div class="act-label" style="color:var(--gold)">Earned</div>
+        <div class="act-hook">"This is actually what I should have been doing."</div>
+        <div class="act-moments">
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gold)"></div>
+            <div><div class="moment-text">First showing: showed up, opened the door, toured, submitted report. $20 hit the account. It felt professional.</div><div class="moment-emotion" style="color:var(--gold)">Proud, competent</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gold)"></div>
+            <div><div class="moment-text">Gig Upgrader: "I used to deliver food. Now I facilitate home tours."</div><div class="moment-emotion" style="color:var(--gold)">Identity upgrade</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gold)"></div>
+            <div><div class="moment-text">RE Aspirant: "I've done 50 showings and know Seminole Heights better than any agent in Tampa."</div><div class="moment-emotion" style="color:var(--gold)">Career capital building</div></div>
+          </div>
+          <div class="moment">
+            <div class="moment-dot" style="background:var(--gold)"></div>
+            <div><div class="moment-text">Refers a neighbor: "Know another Tampa local who'd be great at this? Earn $25."</div><div class="moment-emotion" style="color:var(--gold)">Loyal, evangelical</div></div>
+          </div>
+        </div>
+        <div class="act-voice" style="border-color:var(--gold)">
+          The concierge is the hero — HomeDirectAI is the mechanism that creates the opportunity. Every piece of recruitment content frames them as the protagonist.
+        </div>
+      </div>
+    </div>
+
+    <!-- Messaging -->
+    <div class="section-title" style="color:var(--teal)">Messaging Framework</div>
+    <div class="messaging-grid">
+      <div class="msg-card">
+        <h4 style="color:var(--teal)">6 Headline Frameworks</h4>
+        <div class="headline-list">
+          <div class="headline-item" style="border-color:var(--teal)">
+            <div class="headline-label">Earnings Comparison · Gig Upgrader</div>
+            <div class="headline-text">"DoorDash paid me $22/hr and put 90 miles on my car. This pays the same and I drove 4 miles."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--teal)">
+            <div class="headline-label">Role Reframe · Dignity-Seeking</div>
+            <div class="headline-text">"Ditched DoorDash. Now I unlock doors."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--gold)">
+            <div class="headline-label">Local Knowledge · Tampa Local</div>
+            <div class="headline-text">"You already know every neighborhood in Tampa Bay. Now get paid $20 every time you show one."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--teal)">
+            <div class="headline-label">Math Reveal · Universal</div>
+            <div class="headline-text">"30 minutes. $20. No restaurant waits. No mileage. This is a Tampa home showing."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--gray)">
+            <div class="headline-label">Career On-Ramp · RE Aspirant</div>
+            <div class="headline-text">"Can't get into real estate without a license? There's a side door."</div>
+          </div>
+          <div class="headline-item" style="border-color:var(--teal)">
+            <div class="headline-label">Demand Signal · Trust-Building</div>
+            <div class="headline-text">"Tampa had 3,452 home sales in July 2025. Every buyer toured first. Be the person who opens the door."</div>
+          </div>
+        </div>
+      </div>
+      <div class="msg-card">
+        <h4 style="color:var(--teal)">Voice · Concierge Recruitment Tone</h4>
+        <table class="word-table">
+          <tr><td class="word-use">Concierge / Showing Pro</td><td>Professional title — not "gig worker" in aspirational content</td></tr>
+          <tr><td class="word-use">$20 per showing</td><td>Always lead with the specific earnings number</td></tr>
+          <tr><td class="word-use">No mileage, daylight hours</td><td>Remove the specific pains of gig delivery</td></tr>
+          <tr><td class="word-use">Your Tampa neighborhood</td><td>"Tampa" is an identity badge — use neighborhood names</td></tr>
+          <tr><td class="word-use">Open the door. Report back.</td><td>Honest simplicity — the job is simple, that's a feature</td></tr>
+          <tr><td class="word-avoid">Gig (in aspirational content)</td><td>Reinforces the identity they're trying to leave</td></tr>
+          <tr><td class="word-avoid">Easy money / passive income</td><td>Signals scam — this audience is scam-savvy</td></tr>
+          <tr><td class="word-avoid">Unlimited earning potential</td><td>Sounds like MLM — this audience will walk</td></tr>
+          <tr><td class="word-avoid">Empower / disruptive</td><td>Corporate buzzwords — kills street credibility</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- CTA Stages -->
+    <div class="section-title" style="color:var(--teal)">CTA Language by Funnel Stage</div>
+    <div class="cta-grid">
+      <div class="cta-stage">
+        <div class="cta-stage-label" style="color:var(--teal)">Stage 1 — Awareness</div>
+        <div class="cta-items">
+          <div class="cta-item"><div class="cta-context">TikTok/Reel mid-roll</div><div class="cta-text">"See how much Tampa concierges actually earn →"</div></div>
+          <div class="cta-item"><div class="cta-context">Facebook ad (Gig Upgrader)</div><div class="cta-text">"Find out if this beats what you're making now"</div></div>
+          <div class="cta-item"><div class="cta-context">Nextdoor (Tampa Local)</div><div class="cta-text">"Learn how to turn your neighborhood knowledge into income"</div></div>
+          <div class="cta-item"><div class="cta-context">Reddit (RE Aspirant)</div><div class="cta-text">"No license required — here's how to build RE experience now"</div></div>
+        </div>
+      </div>
+      <div class="cta-stage">
+        <div class="cta-stage-label" style="color:var(--teal)">Stage 2–3 — Consideration + Apply</div>
+        <div class="cta-items">
+          <div class="cta-item"><div class="cta-context">Landing page hero</div><div class="cta-text">"See the earnings breakdown"</div></div>
+          <div class="cta-item"><div class="cta-context">FAQ section close</div><div class="cta-text">"Ready to see if you qualify? Apply in 5 minutes."</div></div>
+          <div class="cta-item"><div class="cta-context">Testimonial section</div><div class="cta-text">"Join 200+ Tampa concierges already earning"</div></div>
+          <div class="cta-item"><div class="cta-context">Application button</div><div class="cta-text">"Start My Application" (not "Submit")</div></div>
+        </div>
+      </div>
+      <div class="cta-stage">
+        <div class="cta-stage-label" style="color:var(--gold)">Stage 4–5 — Onboard + Activate</div>
+        <div class="cta-items">
+          <div class="cta-item"><div class="cta-context">Orientation email subject</div><div class="cta-text">"Your first showing is closer than you think"</div></div>
+          <div class="cta-item"><div class="cta-context">Post-orientation</div><div class="cta-text">"You're cleared. Accept your first showing."</div></div>
+          <div class="cta-item"><div class="cta-context">Post-showing push</div><div class="cta-text">"$20 earned. Check your next showing opportunity."</div></div>
+          <div class="cta-item"><div class="cta-context">Referral prompt</div><div class="cta-text">"Know a Tampa local who'd be great at this? Earn $25."</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Channels -->
+    <div class="section-title" style="color:var(--teal)">Channel Strategy</div>
+    <div class="channel-grid">
+      <div class="channel-card"><div class="channel-name">TikTok (organic + paid)</div><div class="channel-segment">Gig Upgrader · Primary</div><span class="channel-priority p1">Tier 1</span><div class="channel-note">30–60s comparison videos. "POV: I switched from DoorDash to home showings." Lead with earnings math first 3 seconds. Partner 3–5 Tampa micro-influencers (2K–20K followers).</div></div>
+      <div class="channel-card"><div class="channel-name">Facebook Groups</div><div class="channel-segment">Gig Upgrader + Tampa Local</div><span class="channel-priority p1">Tier 1</span><div class="channel-note">Tampa Bay Gig Workers, DoorDash Tampa, Tampa Bay Moms. Lead with Tampa market data, not "WE'RE HIRING." Organic presence first.</div></div>
+      <div class="channel-card"><div class="channel-name">Nextdoor</div><div class="channel-segment">Tampa Local · Primary</div><span class="channel-priority p1">Tier 1</span><div class="channel-note">Hyper-local. Reference specific neighborhoods: Hyde Park, Seminole Heights, Palma Ceia. "Flexible local work for Tampa residents" — not gig economy language.</div></div>
+      <div class="channel-card"><div class="channel-name">Indeed</div><div class="channel-segment">All segments</div><span class="channel-priority p1">Tier 1</span><div class="channel-note">Listing: "Home Showing Concierge — Tampa Bay (Flexible, $20/Showing)." Lead with earnings math and "no experience required." Sponsor listing during ramp-up.</div></div>
+      <div class="channel-card"><div class="channel-name">Reddit</div><div class="channel-segment">Gig Upgrader + RE Aspirant</div><span class="channel-priority p2">Tier 2</span><div class="channel-note">r/doordash_drivers, r/uberdrivers: respond to "alternatives to delivery" threads — disclose affiliation. r/realestate: frame as career on-ramp.</div></div>
+      <div class="channel-card"><div class="channel-name">Instagram Reels</div><div class="channel-segment">Gig Upgrader + RE Aspirant</div><span class="channel-priority p2">Tier 2</span><div class="channel-note">Repurpose TikTok content. Career content for RE Aspirant. Day-in-the-life format performs for this segment.</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer style="border-top:1px solid var(--border); padding:24px 2.5rem; display:flex; align-items:center; justify-content:space-between;">
+  <p style="font-size:0.75rem; color:rgba(107,122,141,0.5); letter-spacing:0.04em;">HomeDirectAI · Tampa Bay, FL · ICP Playbooks · April 2026</p>
+  <a href="hub.html" style="font-size:0.78rem; font-weight:600; color:var(--green); text-decoration:none;">← Back to Hub</a>
+</footer>
+
+<script>
+  function switchTab(audience, btn) {
+    // Hide all panels
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    // Remove active from all buttons
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('active-buyer', 'active-seller', 'active-concierge');
+    });
+    // Show selected panel
+    document.getElementById('panel-' + audience).classList.add('active');
+    // Activate button
+    btn.classList.add('active-' + audience);
+    // Scroll to top of content
+    window.scrollTo({ top: 120, behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>
