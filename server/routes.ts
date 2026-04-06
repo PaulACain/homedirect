@@ -16,7 +16,6 @@ import { passport } from "./auth";
 import fs from "fs";
 import path from "path";
 import { generatePurchaseAgreement, generateSellerDisclosure, generateClosingDisclosure } from "./documents";
-import { generateMarketingCopy, type CopyRequest } from "./marketing-copy";
 
 // Ensure uploads directory exists
 if (!fs.existsSync("./uploads")) {
@@ -1948,35 +1947,5 @@ export function registerRoutes(server: Server, app: Express) {
     });
 
     res.json(repairReq);
-  });
-
-  // ── Marketing Copy Generator ──────────────────────────────────────────────
-  // POST /api/marketing/generate-copy
-  // Admin-only: generates ICP-targeted ad copy using the AI engine
-  app.post("/api/marketing/generate-copy", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    const user = req.user as any;
-    if (user?.role !== "admin") {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-
-    const { icp, angle, format, context } = req.body as CopyRequest;
-
-    if (!icp || !["buyer", "seller", "concierge"].includes(icp)) {
-      return res.status(400).json({ error: "icp must be 'buyer', 'seller', or 'concierge'" });
-    }
-
-    try {
-      const copy = await generateMarketingCopy({ icp, angle, format, context });
-      if (!copy) {
-        return res.status(503).json({ error: "AI provider unavailable — check API keys" });
-      }
-      res.json(copy);
-    } catch (err) {
-      console.error("[Marketing Copy] Generation failed:", err);
-      res.status(500).json({ error: "Copy generation failed" });
-    }
   });
 }

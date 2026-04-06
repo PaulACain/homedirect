@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import {
   Users, Home, ArrowLeft, DollarSign, BarChart2, Trash2, Shield,
-  RefreshCw, TrendingUp, Activity, CreditCard, Sparkles
+  RefreshCw, TrendingUp, Activity, CreditCard
 } from "lucide-react";
 
 function formatPrice(n: number) {
@@ -75,13 +75,6 @@ export default function AdminDashboard() {
             <TabsTrigger value="transactions"><Activity className="mr-1.5 h-4 w-4" />Transactions</TabsTrigger>
             <TabsTrigger value="payments"><CreditCard className="mr-1.5 h-4 w-4" />Payments</TabsTrigger>
           </TabsList>
-
-          {/* Marketing Tools shortcut */}
-          <div className="mb-4 flex gap-2">
-            <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => setLocation("/copy-generator")}>
-              <Sparkles className="h-3.5 w-3.5 text-[#00C47A]" /> Copy Generator
-            </Button>
-          </div>
 
           <TabsContent value="stats"><PlatformStats /></TabsContent>
           <TabsContent value="users"><UsersTab qc={qc} toast={toast} /></TabsContent>
