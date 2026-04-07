@@ -9,8 +9,11 @@ import Dashboard from "@/pages/dashboard";
 import CopyGenerator from "@/pages/copy-generator";
 import BriefGenerator from "@/pages/brief-generator";
 import CompetitorMonitor from "@/pages/competitor-monitor";
+import FeedbackLoop from "@/pages/feedback-loop";
 import Settings from "@/pages/settings";
 import History from "@/pages/history";
+import PerformanceBoard from "@/pages/performance-board";
+import AssetLibrary from "@/pages/asset-library";
 import NotFound from "@/pages/not-found";
 
 function AppShell() {
@@ -23,8 +26,11 @@ function AppShell() {
           <Route path="/copy-generator" component={CopyGenerator} />
           <Route path="/brief-generator" component={BriefGenerator} />
           <Route path="/competitor-monitor" component={CompetitorMonitor} />
+          <Route path="/feedback-loop" component={FeedbackLoop} />
           <Route path="/history" component={History} />
           <Route path="/settings" component={Settings} />
+          <Route path="/performance-board" component={PerformanceBoard} />
+          <Route path="/asset-library" component={AssetLibrary} />
           <Route component={NotFound} />
         </Switch>
       </main>

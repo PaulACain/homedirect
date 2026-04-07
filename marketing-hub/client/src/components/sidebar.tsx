@@ -1,5 +1,6 @@
+import React from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Sparkles, Search, History, Settings, Zap, FileText, BarChart2 } from "lucide-react";
+import { LayoutDashboard, Sparkles, Search, History, Settings, Zap, FileText, BarChart2, Layers, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -7,12 +8,13 @@ const NAV = [
   { href: "/copy-generator",     label: "Copy Generator",     icon: Sparkles,        live: true  },
   { href: "/brief-generator",    label: "Brief Generator",    icon: FileText,        live: true  },
   { href: "/competitor-monitor", label: "Competitor Monitor", icon: Search,          live: true  },
+  { href: "/feedback-loop",      label: "Feedback Loop",      icon: RefreshCw,       live: true  },
+  { href: "/asset-library",      label: "Asset Library",      icon: Layers,          live: true  },
+  { href: "/performance-board",  label: "Performance Board",  icon: BarChart2,       live: true  },
   { href: "/history",            label: "Generation History", icon: History,         live: true  },
 ];
 
-const COMING_SOON = [
-  { label: "Performance Board", icon: BarChart2 },
-];
+const COMING_SOON: { label: string; icon: React.ElementType }[] = [];
 
 export default function Sidebar() {
   const [location] = useLocation();
@@ -58,14 +60,18 @@ export default function Sidebar() {
           );
         })}
 
-        <p className="px-2 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Coming Next</p>
-        {COMING_SOON.map(({ label, icon: Icon }) => (
-          <div key={label} className="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm text-muted-foreground/40 cursor-not-allowed select-none">
-            <Icon className="h-4 w-4 shrink-0" />
-            <span className="flex-1 truncate">{label}</span>
-            <Zap className="h-3 w-3 text-muted-foreground/30" />
-          </div>
-        ))}
+        {COMING_SOON.length > 0 && (
+          <>
+            <p className="px-2 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Coming Next</p>
+            {COMING_SOON.map(({ label, icon: Icon }) => (
+              <div key={label} className="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm text-muted-foreground/40 cursor-not-allowed select-none">
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="flex-1 truncate">{label}</span>
+                <Zap className="h-3 w-3 text-muted-foreground/30" />
+              </div>
+            ))}
+          </>
+        )}
       </nav>
 
       {/* Settings */}

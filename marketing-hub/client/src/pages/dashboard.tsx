@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Sparkles, Search, FileText, BarChart2, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Sparkles, Search, FileText, BarChart2, ArrowRight, AlertCircle, CheckCircle2, Layers, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -34,13 +34,31 @@ const TOOLS = [
     bg: "bg-[hsl(45,90%,61%)]/10 border-[hsl(45,90%,61%)]/20",
   },
   {
-    href: "#",
+    href: "/performance-board",
     icon: BarChart2,
     label: "Performance Board",
-    description: "Connect Meta Ads API + Google Ads API. Weekly winner/loser breakdown auto-feeds new creative briefs every Monday.",
-    live: false,
-    accent: "text-muted-foreground",
-    bg: "bg-muted/30 border-border",
+    description: "Track CTR, CPL, ROAS, and spend by creative, ICP, and format. Manual entry + Meta Ads API integration.",
+    live: true,
+    accent: "text-[hsl(192,100%,50%)]",
+    bg: "bg-[hsl(192,100%,50%)]/10 border-[hsl(192,100%,50%)]/20",
+  },
+  {
+    href: "/asset-library",
+    icon: Layers,
+    label: "Asset Library",
+    description: "Track creative assets through their lifecycle — draft, live, winner, loser — with ICP and format tagging.",
+    live: true,
+    accent: "text-amber-400",
+    bg: "bg-amber-900/15 border-amber-800/20",
+  },
+  {
+    href: "/feedback-loop",
+    icon: RefreshCw,
+    label: "Feedback Loop",
+    description: "Weekly automated analysis of ad performance → generates new creative briefs and queues content for next week.",
+    live: true,
+    accent: "text-[hsl(192,100%,50%)]",
+    bg: "bg-[hsl(192,100%,50%)]/10 border-[hsl(192,100%,50%)]/20",
   },
 ];
 
@@ -143,8 +161,9 @@ export default function Dashboard() {
             { label: "Copy Generator",       status: "live" },
             { label: "Competitor Monitor",   status: "live" },
             { label: "Brief Generator",      status: "live" },
-            { label: "Performance Board",    status: "queued" },
-            { label: "Feedback Loop (Auto)", status: "queued" },
+            { label: "Performance Board",    status: "live" },
+            { label: "Asset Library",        status: "live" },
+            { label: "Feedback Loop (Auto)", status: "live" },
           ].map(({ label, status }) => (
             <div key={label} className="flex items-center gap-3">
               <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${

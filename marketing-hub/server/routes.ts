@@ -2,6 +2,7 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { runCompetitorMonitor } from "./competitor-monitor";
+import { runFeedbackLoop, generateWeeklyFeedback } from "./feedback-loop";
 
 // ── ICP Context (full brand + ICP data embedded) ──────────────────────────────
 
@@ -411,6 +412,386 @@ Return ONLY this JSON (no other text):
     } catch (err: any) {
       console.error("[Competitor Monitor] Error:", err.message);
       res.status(500).json({ error: err.message || "Analysis failed" });
+    }
+  });
+
+  // ── Campaigns ─────────────────────────────────────────────────────────────────
+  app.get("/api/campaigns", (_req, res) => {
+    try {
+      const list = storage.getCampaigns();
+      res.json(list);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/campaigns", (req, res) => {
+    const { name, icp, platform, status, startDate, budget } = req.body;
+    if (!name || !icp || !platform) {
+      return res.status(400).json({ error: "name, icp, and platform are required" });
+    }
+    try {
+      const campaign = storage.createCampaign({
+        name,
+        icp,
+        platform,
+        status: status || "active",
+        startDate: startDate || null,
+        budget: budget || null,
+        createdAt: Date.now(),
+      });
+      res.json(campaign);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.patch("/api/campaigns/:id", (req, res) => {
+    const id = Number(req.params.id);
+    try {
+      const updated = storage.updateCampaign(id, req.body);
+      if (!updated) return res.status(404).json({ error: "Campaign not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Performance Records ───────────────────────────────────────────────────────
+  app.get("/api/performance/summary", (_req, res) => {
+    try {
+      const summary = storage.getPerformanceSummary();
+      res.json(summary);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/performance", (req, res) => {
+    try {
+      const campaignId = req.query.campaignId ? Number(req.query.campaignId) : undefined;
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+      const records = storage.getAdPerformance(campaignId, limit);
+      res.json(records);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/performance", (req, res) => {
+    const { campaignId, adName, format, icp, hook, impressions, clicks, leads, spend, date, notes } = req.body;
+    if (!campaignId || !adName || !format || !icp || date === undefined) {
+      return res.status(400).json({ error: "campaignId, adName, format, icp, and date are required" });
+    }
+    try {
+      const record = storage.addAdPerformance({
+        campaignId: Number(campaignId),
+        adName,
+        format,
+        icp,
+        hook: hook || null,
+        impressions: Number(impressions) || 0,
+        clicks: Number(clicks) || 0,
+        leads: Number(leads) || 0,
+        spend: Number(spend) || 0,
+        date: Number(date),
+        notes: notes || null,
+      });
+      res.json(record);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/performance/:id", (req, res) => {
+    try {
+      storage.deleteAdPerformance(Number(req.params.id));
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/performance/analyze", async (_req, res) => {
+    const provider = storage.getSetting("provider")?.value || "together";
+    const apiKey = resolveApiKey(provider);
+    if (!apiKey) {
+      return res.status(503).json({ error: `No API key found. Set ${provider.toUpperCase()}_API_KEY in your environment variables.` });
+    }
+
+    const PROVIDERS: Record<string, { baseUrl: string; defaultModel: string }> = {
+      together:  { baseUrl: "https://api.together.xyz/v1",              defaultModel: "meta-llama/Llama-3.3-70B-Instruct-Turbo" },
+      fireworks: { baseUrl: "https://api.fireworks.ai/inference/v1",     defaultModel: "accounts/fireworks/models/llama-v3p1-8b-instruct" },
+      deepseek:  { baseUrl: "https://api.deepseek.com",                  defaultModel: "deepseek-chat" },
+      openai:    { baseUrl: "https://api.openai.com/v1",                 defaultModel: "gpt-4o-mini" },
+    };
+    const { baseUrl, defaultModel } = PROVIDERS[provider] || PROVIDERS.together;
+    const model = storage.getSetting("model")?.value || defaultModel;
+
+    const records = storage.getAdPerformance();
+    const campaigns_list = storage.getCampaigns();
+    const summary = storage.getPerformanceSummary();
+
+    if (records.length === 0) {
+      return res.status(400).json({ error: "No performance data to analyze. Add some records first." });
+    }
+
+    const dataContext = JSON.stringify({
+      summary: {
+        totalSpend: `$${(summary.totalSpend / 100).toFixed(2)}`,
+        totalLeads: summary.totalLeads,
+        avgCTR: `${summary.avgCTR.toFixed(2)}%`,
+        avgCPL: `$${(summary.avgCPL / 100).toFixed(2)}`,
+      },
+      campaigns: campaigns_list.map(c => ({ id: c.id, name: c.name, icp: c.icp, platform: c.platform })),
+      performanceRecords: records.map(r => ({
+        id: r.id,
+        campaignId: r.campaignId,
+        adName: r.adName,
+        format: r.format,
+        icp: r.icp,
+        hook: r.hook,
+        impressions: r.impressions,
+        clicks: r.clicks,
+        leads: r.leads,
+        spendDollars: `$${(r.spend / 100).toFixed(2)}`,
+        ctr: r.impressions > 0 ? `${((r.clicks / r.impressions) * 100).toFixed(2)}%` : "0%",
+        cpl: r.leads > 0 ? `$${(r.spend / r.leads / 100).toFixed(2)}` : "N/A",
+      })),
+    }, null, 2);
+
+    const systemPrompt = `You are a performance marketing analyst for HomeDirectAI, a real estate platform in Tampa Bay, FL. 
+Analyze ad performance data and provide actionable insights. Be specific and data-driven.
+Respond with valid JSON only. No markdown, no explanation outside the JSON.`;
+
+    const userPrompt = `Analyze this ad performance data and return insights:
+${dataContext}
+
+Return exactly this JSON structure:
+{
+  "winners": [
+    {"adName": "...", "metric": "CTR or CPL", "value": "...", "insight": "why it's winning"}
+  ],
+  "losers": [
+    {"adName": "...", "metric": "CTR or CPL", "value": "...", "insight": "why it's underperforming"}
+  ],
+  "patterns": [
+    "Pattern 1: ...",
+    "Pattern 2: ...",
+    "Pattern 3: ..."
+  ],
+  "recommendations": [
+    "1. Specific action to take next week",
+    "2. Specific action to take next week",
+    "3. Specific action to take next week"
+  ],
+  "generatedAt": ${Date.now()}
+}`;
+
+    try {
+      const raw = await callLLM(systemPrompt, userPrompt, apiKey, baseUrl, model);
+      if (!raw) return res.status(503).json({ error: "LLM returned empty response" });
+      const cleaned = raw.replace(/```json\n?|```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+      parsed.generatedAt = parsed.generatedAt || Date.now();
+      res.json(parsed);
+    } catch (err: any) {
+      console.error("[Performance Analyze] Error:", err.message);
+      res.status(500).json({ error: err.message || "Analysis failed" });
+    }
+  });
+
+  // ── Assets ────────────────────────────────────────────────────────────────────
+  // Stats must be registered before /:id to avoid route conflict
+  app.get("/api/assets/stats", (_req, res) => {
+    try {
+      const stats = storage.getAssetStats();
+      res.json(stats);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/assets", (req, res) => {
+    try {
+      const { icp, format, status, platform } = req.query as Record<string, string>;
+      const filters: Record<string, string> = {};
+      if (icp)      filters.icp = icp;
+      if (format)   filters.format = format;
+      if (status)   filters.status = status;
+      if (platform) filters.platform = platform;
+      const list = storage.getAssets(Object.keys(filters).length ? filters : undefined);
+      res.json(list);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/assets", (req, res) => {
+    try {
+      const now = Date.now();
+      const asset = storage.createAsset({
+        ...req.body,
+        status: req.body.status || "draft",
+        createdAt: now,
+        updatedAt: now,
+      });
+      res.status(201).json(asset);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.patch("/api/assets/:id", (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const updated = storage.updateAsset(id, { ...req.body, updatedAt: Date.now() });
+      if (!updated) return res.status(404).json({ error: "Asset not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/assets/:id", (req, res) => {
+    try {
+      storage.deleteAsset(Number(req.params.id));
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Feedback Loop ──────────────────────────────────────────────────────────
+
+  // Trigger weekly feedback loop manually
+  app.post("/api/feedback/run", async (_req, res) => {
+    const provider = storage.getSetting("provider")?.value || "together";
+    const apiKey = resolveApiKey(provider);
+    if (!apiKey) {
+      return res.status(503).json({ error: `No API key found. Set ${provider.toUpperCase()}_API_KEY in your environment variables.` });
+    }
+    const model = storage.getSetting("model")?.value || "";
+    try {
+      const report = await generateWeeklyFeedback(apiKey, provider, model);
+      // Save to database
+      storage.saveFeedbackReport({
+        generatedAt: report.generatedAt,
+        weekOf: report.weekOf,
+        summary: JSON.stringify(report),
+        newBriefsCount: report.newBriefs?.length || 0,
+        status: "new",
+      });
+      res.json(report);
+    } catch (err: any) {
+      console.error("[Feedback Loop] Error:", err.message);
+      res.status(500).json({ error: err.message || "Feedback generation failed" });
+    }
+  });
+
+  // List past reports
+  app.get("/api/feedback/reports", (_req, res) => {
+    try {
+      const reports = storage.getFeedbackReports(20);
+      res.json(reports.map(r => ({
+        ...r,
+        summary: JSON.parse(r.summary),
+      })));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Get specific report
+  app.get("/api/feedback/reports/:id", (req, res) => {
+    try {
+      const reports = storage.getFeedbackReports(100);
+      const report = reports.find(r => r.id === Number(req.params.id));
+      if (!report) return res.status(404).json({ error: "Report not found" });
+      res.json({ ...report, summary: JSON.parse(report.summary) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Update report status
+  app.patch("/api/feedback/reports/:id", (req, res) => {
+    try {
+      const updated = storage.updateFeedbackReport(Number(req.params.id), req.body);
+      if (!updated) return res.status(404).json({ error: "Report not found" });
+      res.json({ ...updated, summary: JSON.parse(updated.summary) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Publish Queue ─────────────────────────────────────────────────────────────
+
+  // Get queue stats
+  app.get("/api/publish-queue/stats", (_req, res) => {
+    try {
+      res.json(storage.getQueueStats());
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Send to Buffer (stub)
+  app.post("/api/publish-queue/send-to-buffer", (_req, res) => {
+    const bufferToken = process.env.BUFFER_ACCESS_TOKEN;
+    if (!bufferToken) {
+      return res.json({
+        status: "buffer_not_connected",
+        message: "Add BUFFER_ACCESS_TOKEN to your environment to enable auto-publishing",
+      });
+    }
+    // Future: integrate with Buffer API
+    res.json({ status: "connected", message: "Buffer integration ready" });
+  });
+
+  // List queue items
+  app.get("/api/publish-queue", (req, res) => {
+    try {
+      const { platform, status, icp } = req.query as Record<string, string>;
+      const items = storage.getPublishQueue({ platform, status, icp });
+      res.json(items);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Add to queue
+  app.post("/api/publish-queue", (req, res) => {
+    try {
+      const data = req.body;
+      if (!data.platform || !data.contentType || !data.caption || !data.icp) {
+        return res.status(400).json({ error: "platform, contentType, caption, and icp are required" });
+      }
+      const item = storage.addToPublishQueue({ ...data, createdAt: Date.now() });
+      res.status(201).json(item);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Update queue item
+  app.patch("/api/publish-queue/:id", (req, res) => {
+    try {
+      const updated = storage.updateQueueItem(Number(req.params.id), req.body);
+      if (!updated) return res.status(404).json({ error: "Queue item not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Delete queue item
+  app.delete("/api/publish-queue/:id", (req, res) => {
+    try {
+      storage.deleteQueueItem(Number(req.params.id));
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 
