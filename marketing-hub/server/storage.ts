@@ -3,7 +3,7 @@ import Database from "better-sqlite3";
 import { eq, desc, and } from "drizzle-orm";
 import {
   settings, generations, competitors, adDigests, campaigns, adPerformance, assets,
-  feedbackReports, publishQueue,
+  feedbackReports, publishQueue, videoJobs,
   type Setting, type Generation, type InsertGeneration,
   type Competitor, type InsertCompetitor,
   type AdDigest, type InsertAdDigest,
@@ -12,6 +12,7 @@ import {
   type Asset, type InsertAsset,
   type FeedbackReport, type InsertFeedbackReport,
   type PublishQueueItem, type InsertPublishQueueItem,
+  type VideoJob, type InsertVideoJob,
 } from "@shared/schema";
 
 const sqlite = new Database("marketing-hub.db");
@@ -105,6 +106,22 @@ sqlite.exec(`
     created_at INTEGER NOT NULL,
     notes TEXT
   );
+  CREATE TABLE IF NOT EXISTS video_jobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    script TEXT NOT NULL,
+    hook_text TEXT,
+    cta_text TEXT,
+    voice_id TEXT NOT NULL DEFAULT '21m00Tcm4TlvDq8ikWAM',
+    aspect_ratio TEXT NOT NULL DEFAULT '9:16',
+    search_terms TEXT,
+    icp TEXT,
+    output_path TEXT,
+    audio_duration REAL,
+    error_message TEXT,
+    created_at INTEGER NOT NULL,
+    completed_at INTEGER
+  );
 `);
 
 // Seed default competitors if none exist
@@ -159,6 +176,12 @@ export interface IStorage {
   updateQueueItem(id: number, data: Partial<InsertPublishQueueItem>): PublishQueueItem | undefined;
   deleteQueueItem(id: number): void;
   getQueueStats(): { queued: number; published: number; failed: number; cancelled: number; byPlatform: Record<string, number> };
+  // Video Jobs
+  createVideoJob(data: InsertVideoJob): VideoJob;
+  getVideoJob(id: number): VideoJob | undefined;
+  updateVideoJob(id: number, data: Partial<VideoJob>): void;
+  getVideoJobs(limit?: number): VideoJob[];
+  deleteVideoJob(id: number): void;
 }
 
 export interface PerformanceSummary {
@@ -371,5 +394,21 @@ export const storage: IStorage = {
       stats.byPlatform[item.platform] = (stats.byPlatform[item.platform] || 0) + 1;
     }
     return stats;
+  },
+  // Video Jobs
+  createVideoJob(data) {
+    return db.insert(videoJobs).values(data).returning().get();
+  },
+  getVideoJob(id) {
+    return db.select().from(videoJobs).where(eq(videoJobs.id, id)).get();
+  },
+  updateVideoJob(id, data) {
+    db.update(videoJobs).set(data).where(eq(videoJobs.id, id)).run();
+  },
+  getVideoJobs(limit = 20) {
+    return db.select().from(videoJobs).orderBy(desc(videoJobs.createdAt)).limit(limit).all();
+  },
+  deleteVideoJob(id) {
+    db.delete(videoJobs).where(eq(videoJobs.id, id)).run();
   },
 };

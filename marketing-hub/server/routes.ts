@@ -1,8 +1,11 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import * as fs from "fs";
+import * as path from "path";
 import { storage } from "./storage";
 import { runCompetitorMonitor } from "./competitor-monitor";
 import { runFeedbackLoop, generateWeeklyFeedback } from "./feedback-loop";
+import { startVideoJob } from "./video-generator";
 
 // ── ICP Context (full brand + ICP data embedded) ──────────────────────────────
 
@@ -113,10 +116,12 @@ export async function registerRoutes(_httpServer: Server, app: Express) {
     const apiKey   = resolveApiKey(provider);
     // Report which env vars are detected (without exposing the values)
     const envStatus = {
-      TOGETHER_API_KEY:  !!process.env.TOGETHER_API_KEY,
-      OPENAI_API_KEY:    !!process.env.OPENAI_API_KEY,
-      DEEPSEEK_API_KEY:  !!process.env.DEEPSEEK_API_KEY,
-      FIREWORKS_API_KEY: !!process.env.FIREWORKS_API_KEY,
+      TOGETHER_API_KEY:   !!process.env.TOGETHER_API_KEY,
+      OPENAI_API_KEY:     !!process.env.OPENAI_API_KEY,
+      DEEPSEEK_API_KEY:   !!process.env.DEEPSEEK_API_KEY,
+      FIREWORKS_API_KEY:  !!process.env.FIREWORKS_API_KEY,
+      ELEVENLABS_API_KEY: !!process.env.ELEVENLABS_API_KEY,
+      PEXELS_API_KEY:     !!process.env.PEXELS_API_KEY,
     };
     res.json({ hasKey: !!apiKey, provider, model, envStatus });
   });
@@ -811,5 +816,107 @@ Return exactly this JSON structure:
   app.delete("/api/history/:id", (req, res) => {
     storage.deleteGeneration(Number(req.params.id));
     res.json({ ok: true });
+  });
+
+  // ── Video Generator ───────────────────────────────────────────────────────────
+
+  app.post("/api/video/generate", async (req, res) => {
+    const elevenKey = process.env.ELEVENLABS_API_KEY;
+    const pexelsKey = process.env.PEXELS_API_KEY;
+    if (!elevenKey || !pexelsKey) {
+      return res.status(503).json({
+        error: "Missing ELEVENLABS_API_KEY or PEXELS_API_KEY environment variables",
+      });
+    }
+
+    const {
+      script,
+      hookText,
+      ctaText,
+      voiceId,
+      aspectRatio,
+      searchTerms,
+      icp,
+    } = req.body;
+
+    if (!script || !script.trim()) {
+      return res.status(400).json({ error: "script is required" });
+    }
+
+    try {
+      const jobId = await startVideoJob({
+        script: script.trim(),
+        hookText: hookText || null,
+        ctaText: ctaText || null,
+        voiceId: voiceId || "21m00Tcm4TlvDq8ikWAM",
+        aspectRatio: aspectRatio || "9:16",
+        searchTerms: Array.isArray(searchTerms) ? searchTerms.join(",") : (searchTerms || null),
+        icp: icp || null,
+        status: "pending",
+        outputPath: null,
+        audioDuration: null,
+        errorMessage: null,
+        createdAt: Date.now(),
+        completedAt: null,
+      });
+      res.json({ jobId });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to start video job" });
+    }
+  });
+
+  app.get("/api/video/jobs", (_req, res) => {
+    try {
+      const jobs = storage.getVideoJobs(20);
+      res.json(jobs);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/video/jobs/:id", (req, res) => {
+    try {
+      const job = storage.getVideoJob(Number(req.params.id));
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      res.json(job);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/video/jobs/:id/download", (req, res) => {
+    try {
+      const job = storage.getVideoJob(Number(req.params.id));
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      if (job.status !== "done" || !job.outputPath) {
+        return res.status(400).json({ error: "Video not ready" });
+      }
+      const absPath = path.isAbsolute(job.outputPath)
+        ? job.outputPath
+        : path.resolve(job.outputPath);
+      if (!fs.existsSync(absPath)) {
+        return res.status(404).json({ error: "Video file not found on disk" });
+      }
+      res.setHeader("Content-Type", "video/mp4");
+      res.setHeader("Content-Disposition", 'attachment; filename="homedirectai-reel.mp4"');
+      res.sendFile(absPath);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/video/jobs/:id", (req, res) => {
+    try {
+      const job = storage.getVideoJob(Number(req.params.id));
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      // Delete output file if it exists
+      if (job.outputPath && fs.existsSync(job.outputPath)) {
+        try { fs.unlinkSync(job.outputPath); } catch (_) {}
+      }
+      storage.deleteVideoJob(Number(req.params.id));
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 }

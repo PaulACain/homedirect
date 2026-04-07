@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -104,6 +104,25 @@ export const publishQueue = sqliteTable("publish_queue", {
   notes: text("notes"),
 });
 
+// Video generation jobs
+export const videoJobs = sqliteTable("video_jobs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  status: text("status").notNull().default("pending"),
+  // pending | generating_audio | fetching_broll | composing | done | failed
+  script: text("script").notNull(),
+  hookText: text("hook_text"),       // bold text overlay at start (0-4s)
+  ctaText: text("cta_text"),         // bold text overlay at end (last 5s)
+  voiceId: text("voice_id").notNull().default("21m00Tcm4TlvDq8ikWAM"), // ElevenLabs Rachel
+  aspectRatio: text("aspect_ratio").notNull().default("9:16"), // 9:16 | 1:1
+  searchTerms: text("search_terms"), // comma-separated Pexels search terms
+  icp: text("icp"),
+  outputPath: text("output_path"),   // path to final .mp4
+  audioDuration: real("audio_duration"), // seconds
+  errorMessage: text("error_message"),
+  createdAt: integer("created_at").notNull(),
+  completedAt: integer("completed_at"),
+});
+
 export const insertSettingSchema = createInsertSchema(settings).omit({ id: true });
 export const insertGenerationSchema = createInsertSchema(generations).omit({ id: true });
 export const insertCompetitorSchema = createInsertSchema(competitors).omit({ id: true });
@@ -113,6 +132,7 @@ export const insertAdPerformanceSchema = createInsertSchema(adPerformance).omit(
 export const insertAssetSchema = createInsertSchema(assets).omit({ id: true });
 export const insertFeedbackReportSchema = createInsertSchema(feedbackReports).omit({ id: true });
 export const insertPublishQueueSchema = createInsertSchema(publishQueue).omit({ id: true });
+export const insertVideoJobSchema = createInsertSchema(videoJobs).omit({ id: true });
 
 export type Setting = typeof settings.$inferSelect;
 export type Generation = typeof generations.$inferSelect;
@@ -130,5 +150,7 @@ export type InsertAdPerformance = z.infer<typeof insertAdPerformanceSchema>;
 export type InsertAsset = z.infer<typeof insertAssetSchema>;
 export type FeedbackReport = typeof feedbackReports.$inferSelect;
 export type PublishQueueItem = typeof publishQueue.$inferSelect;
+export type VideoJob = typeof videoJobs.$inferSelect;
 export type InsertFeedbackReport = z.infer<typeof insertFeedbackReportSchema>;
 export type InsertPublishQueueItem = z.infer<typeof insertPublishQueueSchema>;
+export type InsertVideoJob = z.infer<typeof insertVideoJobSchema>;

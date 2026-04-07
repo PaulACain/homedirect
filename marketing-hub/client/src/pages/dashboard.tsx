@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Sparkles, Search, FileText, BarChart2, ArrowRight, AlertCircle, CheckCircle2, Layers, RefreshCw } from "lucide-react";
+import { Sparkles, Search, FileText, BarChart2, ArrowRight, AlertCircle, CheckCircle2, Layers, RefreshCw, Clapperboard } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -14,6 +14,15 @@ const TOOLS = [
     live: true,
     accent: "text-signal",
     bg: "bg-[hsl(152,100%,39%)]/10 border-[hsl(152,100%,39%)]/20",
+  },
+  {
+    href: "/video-generator",
+    icon: Clapperboard,
+    label: "Video Generator",
+    description: "Script → voiceover → b-roll → composed .mp4. No avatars, no actors. Reels and feed ads from your briefs in 60 seconds.",
+    live: true,
+    accent: "text-[hsl(192,100%,50%)]",
+    bg: "bg-[hsl(192,100%,50%)]/10 border-[hsl(192,100%,50%)]/20",
   },
   {
     href: "/competitor-monitor",
@@ -159,8 +168,9 @@ export default function Dashboard() {
         <div className="space-y-2">
           {[
             { label: "Copy Generator",       status: "live" },
-            { label: "Competitor Monitor",   status: "live" },
             { label: "Brief Generator",      status: "live" },
+            { label: "Video Generator",      status: "live" },
+            { label: "Competitor Monitor",   status: "live" },
             { label: "Performance Board",    status: "live" },
             { label: "Asset Library",        status: "live" },
             { label: "Feedback Loop (Auto)", status: "live" },

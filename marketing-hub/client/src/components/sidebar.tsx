@@ -1,12 +1,13 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Sparkles, Search, History, Settings, Zap, FileText, BarChart2, Layers, RefreshCw } from "lucide-react";
+import { LayoutDashboard, Sparkles, Search, History, Settings, Zap, FileText, BarChart2, Layers, RefreshCw, Clapperboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/",                   label: "Dashboard",          icon: LayoutDashboard, live: true  },
   { href: "/copy-generator",     label: "Copy Generator",     icon: Sparkles,        live: true  },
   { href: "/brief-generator",    label: "Brief Generator",    icon: FileText,        live: true  },
+  { href: "/video-generator",    label: "Video Generator",    icon: Clapperboard,    live: true  },
   { href: "/competitor-monitor", label: "Competitor Monitor", icon: Search,          live: true  },
   { href: "/feedback-loop",      label: "Feedback Loop",      icon: RefreshCw,       live: true  },
   { href: "/asset-library",      label: "Asset Library",      icon: Layers,          live: true  },

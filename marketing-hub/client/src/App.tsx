@@ -14,6 +14,7 @@ import Settings from "@/pages/settings";
 import History from "@/pages/history";
 import PerformanceBoard from "@/pages/performance-board";
 import AssetLibrary from "@/pages/asset-library";
+import VideoGenerator from "@/pages/video-generator";
 import NotFound from "@/pages/not-found";
 
 function AppShell() {
@@ -31,6 +32,7 @@ function AppShell() {
           <Route path="/settings" component={Settings} />
           <Route path="/performance-board" component={PerformanceBoard} />
           <Route path="/asset-library" component={AssetLibrary} />
+          <Route path="/video-generator" component={VideoGenerator} />
           <Route component={NotFound} />
         </Switch>
       </main>
