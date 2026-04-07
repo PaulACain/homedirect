@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, RefreshCw, Copy, Home, Users, Briefcase } from "lucide-react";
+import { Sparkles, RefreshCw, Copy, Home, Users, Briefcase, Video, Info } from "lucide-react";
 
 type ICP = "buyer" | "seller" | "concierge";
 type Angle = "all" | "pain" | "savings" | "curiosity" | "social_proof" | "urgency";
@@ -65,6 +66,46 @@ function CopyList({ items, numbered = false }: { items: string[]; numbered?: boo
       <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-7" onClick={() => { navigator.clipboard.writeText(items.join("\n\n")); toast({ description: "All copied" }); }}>
         <Copy className="h-3 w-3 mr-1" /> Copy all
       </Button>
+    </div>
+  );
+}
+
+function VideoScriptBlock({
+  label,
+  script,
+  icp,
+}: {
+  label: string;
+  script: string;
+  icp: ICP;
+}) {
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+
+  const handleUseAsVideoScript = async () => {
+    try {
+      await apiRequest("POST", "/api/pipeline/set-script", { script, icp });
+      toast({ description: "Script saved — opening Video Generator" });
+      navigate("/video-generator");
+    } catch {
+      toast({ variant: "destructive", description: "Failed to save script" });
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+        <Button
+          size="sm"
+          className="h-7 px-3 text-xs bg-[#00D4FF]/15 hover:bg-[#00D4FF]/25 text-[#00D4FF] border border-[#00D4FF]/30 hover:border-[#00D4FF]/50"
+          onClick={handleUseAsVideoScript}
+        >
+          <Video className="h-3 w-3 mr-1.5" />
+          → Use as Video Script
+        </Button>
+      </div>
+      <CopyCard label={label} content={script} mono />
     </div>
   );
 }
@@ -248,8 +289,17 @@ export default function CopyGenerator() {
                 </TabsContent>
 
                 <TabsContent value="video" className="space-y-5 mt-0">
-                  <div><p className="text-xs font-semibold text-muted-foreground mb-2">30-SECOND UGC SCRIPT</p><CopyCard label="30s" content={result.videoScript30} mono /></div>
-                  <div><p className="text-xs font-semibold text-muted-foreground mb-2">60-SECOND UGC SCRIPT</p><CopyCard label="60s" content={result.videoScript60} mono /></div>
+                  {/* Workflow info box */}
+                  <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-md border border-[#00D4FF]/20 bg-[#00D4FF]/5">
+                    <Info className="h-3.5 w-3.5 text-[#00D4FF] mt-0.5 shrink-0" />
+                    <p className="text-xs text-[#00D4FF]/80 leading-relaxed">
+                      The 30s and 60s scripts are your <strong className="text-[#00D4FF]">voiceover</strong> — they go directly into the Video Generator.
+                      The Brief Generator produces your <strong className="text-[#00D4FF]">visual direction guide</strong> (scene layout, b-roll cues) to use alongside the video.
+                    </p>
+                  </div>
+
+                  <VideoScriptBlock label="30-SECOND UGC SCRIPT" script={result.videoScript30} icp={icp} />
+                  <VideoScriptBlock label="60-SECOND UGC SCRIPT" script={result.videoScript60} icp={icp} />
                 </TabsContent>
 
                 <TabsContent value="social" className="space-y-3 mt-0">

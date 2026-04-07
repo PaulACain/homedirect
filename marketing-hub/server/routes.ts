@@ -107,6 +107,15 @@ function resolveApiKey(provider: string): string | undefined {
   return envMap[provider] || storage.getSetting("api_key")?.value || undefined;
 }
 
+// Resolve ElevenLabs / Pexels keys: env var first, then SQLite fallback
+export function resolveServiceKey(name: "elevenlabs" | "pexels"): string | undefined {
+  const envMap: Record<string, string> = {
+    elevenlabs: process.env.ELEVENLABS_API_KEY || "",
+    pexels:     process.env.PEXELS_API_KEY     || "",
+  };
+  return envMap[name] || storage.getSetting(`${name}_api_key`)?.value || undefined;
+}
+
 export async function registerRoutes(_httpServer: Server, app: Express) {
 
   // ── Settings ─────────────────────────────────────────────────────────────────
@@ -123,7 +132,14 @@ export async function registerRoutes(_httpServer: Server, app: Express) {
       ELEVENLABS_API_KEY: !!process.env.ELEVENLABS_API_KEY,
       PEXELS_API_KEY:     !!process.env.PEXELS_API_KEY,
     };
-    res.json({ hasKey: !!apiKey, provider, model, envStatus });
+    const elevenlabsKey = process.env.ELEVENLABS_API_KEY || storage.getSetting("elevenlabs_api_key")?.value;
+    const pexelsKey     = process.env.PEXELS_API_KEY     || storage.getSetting("pexels_api_key")?.value;
+    res.json({
+      hasKey: !!apiKey,
+      hasElevenlabs: !!elevenlabsKey,
+      hasPexels: !!pexelsKey,
+      provider, model, envStatus
+    });
   });
 
   app.post("/api/settings", (req, res) => {
@@ -131,6 +147,9 @@ export async function registerRoutes(_httpServer: Server, app: Express) {
     if (provider !== undefined) storage.setSetting("provider", provider);
     if (model    !== undefined) storage.setSetting("model",    model);
     if (apiKey   !== undefined && apiKey !== "") storage.setSetting("api_key", apiKey);
+    const { elevenlabsKey, pexelsKey } = req.body;
+    if (elevenlabsKey !== undefined && elevenlabsKey !== "") storage.setSetting("elevenlabs_api_key", elevenlabsKey);
+    if (pexelsKey     !== undefined && pexelsKey     !== "") storage.setSetting("pexels_api_key", pexelsKey);
     res.json({ ok: true });
   });
 
@@ -821,8 +840,8 @@ Return exactly this JSON structure:
   // ── Video Generator ───────────────────────────────────────────────────────────
 
   app.post("/api/video/generate", async (req, res) => {
-    const elevenKey = process.env.ELEVENLABS_API_KEY;
-    const pexelsKey = process.env.PEXELS_API_KEY;
+    const elevenKey = process.env.ELEVENLABS_API_KEY || storage.getSetting("elevenlabs_api_key")?.value;
+    const pexelsKey = process.env.PEXELS_API_KEY || storage.getSetting("pexels_api_key")?.value;
     if (!elevenKey || !pexelsKey) {
       return res.status(503).json({
         error: "Missing ELEVENLABS_API_KEY or PEXELS_API_KEY environment variables",
@@ -917,6 +936,28 @@ Return exactly this JSON structure:
       res.json({ ok: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Pipeline buffer — passes data between tools ───────────────────────────────
+  app.post("/api/pipeline/set-script", (req, res) => {
+    const { script, icp } = req.body;
+    if (script) {
+      storage.setSetting("pipeline_script", script);
+      storage.setSetting("pipeline_icp", icp || "seller");
+    }
+    res.json({ ok: true });
+  });
+
+  app.get("/api/pipeline/get-script", (req, res) => {
+    const script = storage.getSetting("pipeline_script");
+    const icp    = storage.getSetting("pipeline_icp");
+    if (script?.value) {
+      // Clear after reading (one-time use)
+      storage.setSetting("pipeline_script", "");
+      res.json({ script: script.value, icp: icp?.value || "seller" });
+    } else {
+      res.json({ script: null, icp: null });
     }
   });
 }

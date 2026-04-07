@@ -10,6 +10,7 @@ import {
   AlertCircle,
   RefreshCw,
   Play,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -131,15 +132,31 @@ export default function VideoGenerator() {
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // On mount: read pipeline script (one-time)
+  useEffect(() => {
+    apiRequest("GET", "/api/pipeline/get-script")
+      .then(r => r.json())
+      .then((data: { script: string | null; icp: string | null }) => {
+        if (data.script) {
+          setScript(data.script);
+          if (data.icp && ["buyer", "seller", "concierge"].includes(data.icp)) {
+            setIcp(data.icp as "buyer" | "seller" | "concierge");
+          }
+          toast({ description: "Script pre-filled from Copy Generator" });
+        }
+      })
+      .catch(() => {
+        // silently ignore — no pipeline script
+      });
+  }, []);
+
   // Settings check
   const { data: settings } = useQuery({
     queryKey: ["/api/settings"],
     queryFn: () => apiRequest("GET", "/api/settings").then(r => r.json()),
   });
 
-  const missingKeys = settings && (
-    !settings.envStatus?.ELEVENLABS_API_KEY || !settings.envStatus?.PEXELS_API_KEY
-  );
+  const missingKeys = settings && (!settings.hasElevenlabs || !settings.hasPexels);
 
   // Active job polling
   const { data: activeJob, refetch: refetchActiveJob } = useQuery<VideoJob>({
@@ -168,11 +185,7 @@ export default function VideoGenerator() {
   const { data: pastJobs = [], refetch: refetchJobs } = useQuery<VideoJob[]>({
     queryKey: ["/api/video/jobs"],
     queryFn: () => apiRequest("GET", "/api/video/jobs").then(r => r.json()),
-    refetchInterval: (data) => {
-      const arr = data as VideoJob[] | undefined;
-      if (arr?.some(j => !["done", "failed"].includes(j.status))) return 10000;
-      return false;
-    },
+    refetchInterval: 8000,
   });
 
   // Generate mutation
@@ -215,6 +228,27 @@ export default function VideoGenerator() {
     },
   });
 
+  const handleDelete = (id: number) => {
+    if (!window.confirm("Delete this video? This cannot be undone.")) return;
+    deleteMutation.mutate(id);
+  };
+
+  const handleRestoreInputs = (job: VideoJob) => {
+    setScript(job.script);
+    setHookText(job.hookText || "");
+    setCtaText(job.ctaText || "");
+    setVoiceId(job.voiceId || "21m00Tcm4TlvDq8ikWAM");
+    if (job.aspectRatio === "9:16" || job.aspectRatio === "1:1") {
+      setAspectRatio(job.aspectRatio);
+    }
+    if (job.icp && ["buyer", "seller", "concierge"].includes(job.icp)) {
+      setIcp(job.icp as "buyer" | "seller" | "concierge");
+    }
+    toast({ description: "Inputs restored from past job" });
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const isGenerating = generateMutation.isPending ||
     (!!activeJob && !["done", "failed"].includes(activeJob?.status ?? ""));
 
@@ -254,8 +288,101 @@ export default function VideoGenerator() {
         </div>
       )}
 
+      {/* Past Videos — shown above the fold when jobs exist and no active job */}
+      {pastJobs.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            Past Videos
+            <Badge variant="outline" className="text-[10px] font-normal">{pastJobs.length}</Badge>
+          </h2>
+          <div className="rounded-lg border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">ICP</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Hook</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Format</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Duration</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</th>
+                  <th className="px-4 py-2.5"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {pastJobs.map(job => (
+                  <tr key={job.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-3">
+                      {job.icp ? (
+                        <span className="capitalize text-xs font-medium px-2 py-0.5 rounded bg-[hsl(152,100%,39%)]/10 text-[hsl(152,100%,39%)]">
+                          {job.icp}
+                        </span>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground max-w-[180px] truncate">
+                      {job.hookText || <span className="italic opacity-50">No hook</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant="secondary" className="text-[10px]">{job.aspectRatio}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {formatDuration(job.audioDuration)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={job.status} />
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                      {formatDate(job.createdAt)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 justify-end">
+                        {/* Restore Inputs button */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2.5 text-xs gap-1.5 text-[hsl(192,100%,50%)] border-[hsl(192,100%,50%)]/30 hover:border-[hsl(192,100%,50%)]/60 hover:bg-[hsl(192,100%,50%)]/5"
+                          onClick={() => handleRestoreInputs(job)}
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Restore
+                        </Button>
+                        {job.status === "done" && (
+                          <a href={`/api/video/jobs/${job.id}/download`} download="homedirectai-reel.mp4">
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
+                              <Download className="h-3 w-3 mr-1" />
+                              .mp4
+                            </Button>
+                          </a>
+                        )}
+                        {!["done", "failed"].includes(job.status) && (
+                          <button
+                            onClick={() => setActiveJobId(job.id)}
+                            className="text-xs text-[hsl(192,100%,50%)] hover:underline"
+                          >
+                            <Play className="h-3 w-3 inline mr-1" />
+                            Track
+                          </button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-muted-foreground hover:text-red-400"
+                          onClick={() => handleDelete(job.id)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Two-panel layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* LEFT: Controls */}
         <Card className="border-border bg-card">
@@ -272,7 +399,7 @@ export default function VideoGenerator() {
               <Textarea
                 value={script}
                 onChange={e => setScript(e.target.value)}
-                placeholder="Paste your reel script from the Brief Generator here..."
+                placeholder="Paste your 30s or 60s script from Copy Generator here (voiceover text)..."
                 className="min-h-[120px] text-sm resize-none bg-background border-border"
               />
             </div>
@@ -488,86 +615,6 @@ export default function VideoGenerator() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Past Videos table */}
-      {pastJobs.length > 0 && (
-        <div>
-          <h2 className="text-sm font-semibold text-foreground mb-3">Past Videos</h2>
-          <div className="rounded-lg border border-border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">ICP</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Hook</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Format</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Duration</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</th>
-                  <th className="px-4 py-2.5"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {pastJobs.map(job => (
-                  <tr key={job.id} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-3">
-                      {job.icp ? (
-                        <span className="capitalize text-xs font-medium px-2 py-0.5 rounded bg-[hsl(152,100%,39%)]/10 text-[hsl(152,100%,39%)]">
-                          {job.icp}
-                        </span>
-                      ) : <span className="text-muted-foreground">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground max-w-[180px] truncate">
-                      {job.hookText || <span className="italic opacity-50">No hook</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant="secondary" className="text-[10px]">{job.aspectRatio}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {formatDuration(job.audioDuration)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={job.status} />
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                      {formatDate(job.createdAt)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 justify-end">
-                        {job.status === "done" && (
-                          <a href={`/api/video/jobs/${job.id}/download`} download="homedirectai-reel.mp4">
-                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                              <Download className="h-3 w-3 mr-1" />
-                              .mp4
-                            </Button>
-                          </a>
-                        )}
-                        {!["done", "failed"].includes(job.status) && (
-                          <button
-                            onClick={() => setActiveJobId(job.id)}
-                            className="text-xs text-[hsl(192,100%,50%)] hover:underline"
-                          >
-                            <Play className="h-3 w-3 inline mr-1" />
-                            Track
-                          </button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 px-2 text-muted-foreground hover:text-red-400"
-                          onClick={() => deleteMutation.mutate(job.id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -21,6 +21,8 @@ export default function Settings() {
   const [provider, setProvider] = useState("together");
   const [model, setModel] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [elevenlabsKey, setElevenlabsKey] = useState("");
+  const [pexelsKey, setPexelsKey] = useState("");
   const [showKey, setShowKey] = useState(false);
 
   const { data: current } = useQuery({
@@ -36,7 +38,13 @@ export default function Settings() {
   }, [current]);
 
   const save = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/settings", { provider, model: model || undefined, apiKey: apiKey || undefined }).then(r => r.json()),
+    mutationFn: () => apiRequest("POST", "/api/settings", {
+      provider,
+      model: model || undefined,
+      apiKey: apiKey || undefined,
+      elevenlabsKey: elevenlabsKey || undefined,
+      pexelsKey: pexelsKey || undefined,
+    }).then(r => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({ description: "Settings saved" });
@@ -172,6 +180,38 @@ FIREWORKS_API_KEY=your-key-here`
               className="font-mono text-sm h-9"
             />
             <p className="text-xs text-muted-foreground mt-1">Leave blank to use the default model for the selected provider.</p>
+          </div>
+
+          {/* ElevenLabs Key */}
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
+              ElevenLabs API Key
+              {current?.hasElevenlabs && <span className="font-normal text-signal ml-2">(key saved)</span>}
+            </label>
+            <Input
+              data-testid="input-elevenlabs-key"
+              type="password"
+              placeholder={current?.hasElevenlabs ? "••••••••••••••••" : "Paste ElevenLabs key — elevenlabs.io/app/settings/api-keys"}
+              value={elevenlabsKey}
+              onChange={e => setElevenlabsKey(e.target.value)}
+              className="font-mono text-sm h-9"
+            />
+          </div>
+
+          {/* Pexels Key */}
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
+              Pexels API Key
+              {current?.hasPexels && <span className="font-normal text-signal ml-2">(key saved)</span>}
+            </label>
+            <Input
+              data-testid="input-pexels-key"
+              type="password"
+              placeholder={current?.hasPexels ? "••••••••••••••••" : "Paste Pexels key — pexels.com/api"}
+              value={pexelsKey}
+              onChange={e => setPexelsKey(e.target.value)}
+              className="font-mono text-sm h-9"
+            />
           </div>
 
           <Button

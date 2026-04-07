@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, RefreshCw, Copy, Home, Users, Briefcase, Layers, Film, Image, Download, Clock } from "lucide-react";
+import { FileText, RefreshCw, Copy, Home, Users, Briefcase, Layers, Film, Image, Download, Clock, History, Trash2, ChevronDown, ChevronRight, RotateCcw } from "lucide-react";
 
 type ICP = "buyer" | "seller" | "concierge";
 type Format = "all" | "carousel" | "reel" | "static";
@@ -70,10 +70,19 @@ interface GeneratedBrief {
   static?: StaticBrief;
 }
 
-const ICP_META: Record<ICP, { label: string; sub: string; icon: React.ReactNode }> = {
-  buyer:     { label: "Buyer",     sub: "Save ~$9,818 on a $430K home",  icon: <Home className="h-4 w-4" /> },
-  seller:    { label: "Seller",    sub: "Keep ~$19,000 more at closing", icon: <Users className="h-4 w-4" /> },
-  concierge: { label: "Concierge", sub: "$20/showing, your schedule",    icon: <Briefcase className="h-4 w-4" /> },
+interface HistoryItem {
+  id: number;
+  icp: string;
+  angle: string | null;
+  context: string | null;
+  createdAt: number;
+  result: GeneratedBrief;
+}
+
+const ICP_META: Record<ICP, { label: string; sub: string; icon: React.ReactNode; color: string }> = {
+  buyer:     { label: "Buyer",     sub: "Save ~$9,818 on a $430K home",  icon: <Home className="h-4 w-4" />,      color: "border-blue-500/40 bg-blue-500/10 text-blue-300" },
+  seller:    { label: "Seller",    sub: "Keep ~$19,000 more at closing", icon: <Users className="h-4 w-4" />,     color: "border-[#00C47A]/40 bg-[#00C47A]/10 text-[#00C47A]" },
+  concierge: { label: "Concierge", sub: "$20/showing, your schedule",    icon: <Briefcase className="h-4 w-4" />, color: "border-amber-500/40 bg-amber-500/10 text-amber-300" },
 };
 
 const FORMAT_META: Record<Format, { label: string; icon: React.ReactNode }> = {
@@ -384,6 +393,146 @@ function StaticTab({ brief }: { brief: StaticBrief }) {
   );
 }
 
+// ── History panel ─────────────────────────────────────────────────────────────
+
+function BriefHistoryPanel({
+  onLoad,
+}: {
+  onLoad: (result: GeneratedBrief, icp: ICP) => void;
+}) {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [expanded, setExpanded] = useState(true);
+
+  const { data: allHistory = [] } = useQuery<HistoryItem[]>({
+    queryKey: ["/api/history"],
+    queryFn: () => apiRequest("GET", "/api/history").then(r => r.json()),
+  });
+
+  const briefHistory = allHistory.filter(
+    item => typeof item.angle === "string" && item.angle.startsWith("brief:")
+  );
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) =>
+      apiRequest("DELETE", `/api/history/${id}`).then(r => r.json()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/history"] });
+      toast({ description: "Brief deleted" });
+    },
+  });
+
+  const handleDelete = (id: number) => {
+    if (!window.confirm("Delete this brief? This cannot be undone.")) return;
+    deleteMutation.mutate(id);
+  };
+
+  const getPreview = (item: HistoryItem): string => {
+    const r = item.result;
+    if (r.carousel?.slides?.[0]?.headline) return r.carousel.slides[0].headline;
+    if (r.reel?.hook) return r.reel.hook;
+    if (r.static?.heroHeadline) return r.static.heroHeadline;
+    return "—";
+  };
+
+  const getFormatLabel = (angle: string | null): string => {
+    if (!angle) return "brief";
+    const parts = angle.split(":");
+    return parts[1] || "brief";
+  };
+
+  if (briefHistory.length === 0) return null;
+
+  return (
+    <div className="mt-8">
+      <button
+        className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3 w-full text-left"
+        onClick={() => setExpanded(v => !v)}
+      >
+        <History className="h-4 w-4 text-[#00C47A]" />
+        Brief History
+        <span className="text-xs font-normal text-muted-foreground ml-1">({briefHistory.length})</span>
+        {expanded ? (
+          <ChevronDown className="h-3.5 w-3.5 ml-auto text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 ml-auto text-muted-foreground" />
+        )}
+      </button>
+
+      {expanded && (
+        <div className="rounded-lg border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/30">
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">ICP</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Format</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Preview</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</th>
+                <th className="px-4 py-2.5"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {briefHistory.map(item => (
+                <tr key={item.id} className="hover:bg-muted/20 transition-colors">
+                  <td className="px-4 py-3">
+                    <Badge
+                      className={`text-[10px] capitalize ${
+                        ICP_META[item.icp as ICP]?.color || "border-border text-muted-foreground"
+                      }`}
+                    >
+                      {item.icp}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant="outline" className="text-[10px] capitalize">
+                      {getFormatLabel(item.angle)}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground max-w-[260px] truncate">
+                    {getPreview(item)}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                    {new Date(item.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2 justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2.5 text-xs gap-1.5 text-[#00C47A] border-[#00C47A]/30 hover:border-[#00C47A]/60 hover:bg-[#00C47A]/5"
+                        onClick={() => onLoad(item.result, item.icp as ICP)}
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Load
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-muted-foreground hover:text-red-400"
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
 export default function BriefGenerator() {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -392,6 +541,13 @@ export default function BriefGenerator() {
   const [copyInput, setCopyInput] = useState("");
   const [result, setResult] = useState<GeneratedBrief | null>(null);
   const [activeResultTab, setActiveResultTab] = useState("carousel");
+  const [loadedIcp, setLoadedIcp] = useState<ICP | null>(null);
+
+  // Fetch history for "Load from last generation" feature
+  const { data: allHistory = [] } = useQuery<HistoryItem[]>({
+    queryKey: ["/api/history"],
+    queryFn: () => apiRequest("GET", "/api/history").then(r => r.json()),
+  });
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -412,6 +568,7 @@ export default function BriefGenerator() {
     onSuccess: (data) => {
       if (data.error) { toast({ variant: "destructive", description: data.error }); return; }
       setResult(data);
+      setLoadedIcp(null);
       qc.invalidateQueries({ queryKey: ["/api/history"] });
       // Set active tab to first available
       if (data.carousel) setActiveResultTab("carousel");
@@ -422,7 +579,30 @@ export default function BriefGenerator() {
     onError: () => toast({ variant: "destructive", description: "Brief generation failed — check Settings" }),
   });
 
+  const handleLoadFromHistory = (histResult: GeneratedBrief, histIcp: ICP) => {
+    setResult(histResult);
+    setLoadedIcp(histIcp);
+    if (histResult.carousel) setActiveResultTab("carousel");
+    else if (histResult.reel) setActiveResultTab("reel");
+    else if (histResult.static) setActiveResultTab("static");
+    toast({ description: "Brief loaded from history" });
+  };
+
+  const handleLoadLastCopy = () => {
+    const nonBrief = allHistory.find(
+      item => !item.angle?.startsWith("brief:")
+    );
+    if (!nonBrief) {
+      toast({ variant: "destructive", description: "No copy generation found in history" });
+      return;
+    }
+    const summary = JSON.stringify(nonBrief.result, null, 2);
+    setCopyInput(summary);
+    toast({ description: "Copy output loaded from last generation" });
+  };
+
   const hasResult = result && (result.carousel || result.reel || result.static);
+  const displayIcp = loadedIcp || icp;
   const availableTabs = [
     { key: "carousel", label: "Carousel", icon: <Layers className="h-3.5 w-3.5" />, data: result?.carousel },
     { key: "reel",     label: "Reel",     icon: <Film className="h-3.5 w-3.5" />,   data: result?.reel },
@@ -443,6 +623,24 @@ export default function BriefGenerator() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left panel — Controls */}
         <div className="space-y-4">
+
+          {/* Workflow Guide card */}
+          <Card className="border-[#00C47A]/20 bg-[#00C47A]/5">
+            <CardContent className="pt-4 pb-4 space-y-2">
+              <p className="text-[10px] font-semibold text-[#00C47A] uppercase tracking-widest flex items-center gap-1.5">
+                <FileText className="h-3 w-3" /> Workflow Guide
+              </p>
+              <div className="space-y-1.5 text-[11px] text-muted-foreground leading-relaxed">
+                <p className="font-medium text-foreground">Copy Generator → paste here → Brief Generator</p>
+                <div className="space-y-1 pl-2 border-l border-[#00C47A]/20">
+                  <p><span className="text-[#00C47A] font-medium">Carousel:</span> slide-by-slide layout for Canva</p>
+                  <p><span className="text-[#00C47A] font-medium">Reel:</span> visual scene breakdown (director's guide) — use the Copy Generator's 30s script as voiceover in Video Generator</p>
+                  <p><span className="text-[#00C47A] font-medium">Static:</span> image specs for AdCreative.ai</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Configure</CardTitle>
@@ -498,11 +696,22 @@ export default function BriefGenerator() {
                 </div>
               </div>
 
-              {/* Copy input textarea */}
+              {/* Copy input textarea — improved */}
               <div>
-                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block mb-2">
-                  Paste Copy Output
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Paste Copy Output from Copy Generator
+                  </label>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-[10px] text-[#00C47A] hover:text-[#00C47A] hover:bg-[#00C47A]/10 shrink-0"
+                    onClick={handleLoadLastCopy}
+                  >
+                    <RotateCcw className="h-2.5 w-2.5 mr-1" />
+                    Load last
+                  </Button>
+                </div>
                 <Textarea
                   data-testid="input-copy"
                   placeholder='Paste JSON from Copy Generator or plain text copy here…'
@@ -511,7 +720,7 @@ export default function BriefGenerator() {
                   className="resize-none h-40 text-sm font-mono text-xs"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  Accepts JSON output from Copy Generator or plain text
+                  JSON or plain text — accepts output from Copy Generator
                 </p>
               </div>
 
@@ -592,18 +801,18 @@ export default function BriefGenerator() {
             <div>
               <div className="flex items-center gap-2 mb-4 flex-wrap">
                 <Badge
-                  className="text-xs"
-                  style={{
-                    borderColor: "hsl(152,100%,39%,0.4)",
-                    background: "hsl(152,100%,39%,0.1)",
-                    color: "hsl(152,100%,39%)",
-                  }}
+                  className={`text-xs ${ICP_META[displayIcp]?.color || "border-border text-muted-foreground"}`}
                 >
-                  {ICP_META[icp].label}
+                  {displayIcp}
                 </Badge>
                 <Badge variant="outline" className="text-xs capitalize">
                   {format === "all" ? "All formats" : FORMAT_META[format].label}
                 </Badge>
+                {loadedIcp && (
+                  <Badge variant="outline" className="text-xs text-[#00D4FF] border-[#00D4FF]/30">
+                    Loaded from history
+                  </Badge>
+                )}
                 <span className="text-xs text-muted-foreground ml-auto">
                   {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </span>
@@ -646,6 +855,9 @@ export default function BriefGenerator() {
           )}
         </div>
       </div>
+
+      {/* History Panel */}
+      <BriefHistoryPanel onLoad={handleLoadFromHistory} />
     </div>
   );
 }
