@@ -88,25 +88,40 @@ async function callLLM(systemPrompt: string, userPrompt: string, apiKey: string,
   return data.choices?.[0]?.message?.content || null;
 }
 
+// ── Env-based key resolution ─────────────────────────────────────────────────
+// API keys come from environment variables only — never stored in the database.
+// Set them in .env locally or in Railway's environment variable store.
+function resolveApiKey(provider: string): string | undefined {
+  const keyMap: Record<string, string> = {
+    together:  process.env.TOGETHER_API_KEY  || "",
+    openai:    process.env.OPENAI_API_KEY    || "",
+    deepseek:  process.env.DEEPSEEK_API_KEY  || "",
+    fireworks: process.env.FIREWORKS_API_KEY || "",
+  };
+  return keyMap[provider] || undefined;
+}
+
 export async function registerRoutes(_httpServer: Server, app: Express) {
 
   // ── Settings ─────────────────────────────────────────────────────────────────
   app.get("/api/settings", (_req, res) => {
-    const apiKey = storage.getSetting("api_key");
-    const provider = storage.getSetting("provider");
-    const model = storage.getSetting("model");
-    res.json({
-      hasKey: !!apiKey?.value,
-      provider: provider?.value || "together",
-      model: model?.value || "",
-    });
+    const provider = storage.getSetting("provider")?.value || "together";
+    const model    = storage.getSetting("model")?.value    || "";
+    const apiKey   = resolveApiKey(provider);
+    // Report which env vars are detected (without exposing the values)
+    const envStatus = {
+      TOGETHER_API_KEY:  !!process.env.TOGETHER_API_KEY,
+      OPENAI_API_KEY:    !!process.env.OPENAI_API_KEY,
+      DEEPSEEK_API_KEY:  !!process.env.DEEPSEEK_API_KEY,
+      FIREWORKS_API_KEY: !!process.env.FIREWORKS_API_KEY,
+    };
+    res.json({ hasKey: !!apiKey, provider, model, envStatus });
   });
 
   app.post("/api/settings", (req, res) => {
-    const { apiKey, provider, model } = req.body;
-    if (apiKey !== undefined) storage.setSetting("api_key", apiKey);
+    const { provider, model } = req.body;
     if (provider !== undefined) storage.setSetting("provider", provider);
-    if (model !== undefined) storage.setSetting("model", model);
+    if (model    !== undefined) storage.setSetting("model",    model);
     res.json({ ok: true });
   });
 
@@ -118,14 +133,12 @@ export async function registerRoutes(_httpServer: Server, app: Express) {
       return res.status(400).json({ error: "icp must be buyer | seller | concierge" });
     }
 
-    const apiKeySetting = storage.getSetting("api_key");
-    if (!apiKeySetting?.value) {
-      return res.status(503).json({ error: "No API key configured. Add one in Settings." });
+    const provider = storage.getSetting("provider")?.value || "together";
+    const apiKey = resolveApiKey(provider);
+    if (!apiKey) {
+      return res.status(503).json({ error: `No API key found. Set ${provider.toUpperCase()}_API_KEY in your environment variables.` });
     }
-
-    const providerSetting = storage.getSetting("provider");
     const modelSetting = storage.getSetting("model");
-    const provider = providerSetting?.value || "together";
 
     const PROVIDERS: Record<string, { baseUrl: string; defaultModel: string }> = {
       together:  { baseUrl: "https://api.together.xyz/v1",              defaultModel: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo" },
@@ -136,6 +149,7 @@ export async function registerRoutes(_httpServer: Server, app: Express) {
 
     const { baseUrl, defaultModel } = PROVIDERS[provider] || PROVIDERS.together;
     const model = modelSetting?.value || defaultModel;
+    const apiKeySetting = { value: apiKey };
 
     const systemPrompt = `You are an expert direct-response advertising copywriter for HomeDirectAI, an AI-powered real estate platform in Tampa Bay, FL.
 
