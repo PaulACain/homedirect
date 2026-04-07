@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Sidebar from "@/components/sidebar";
 import Dashboard from "@/pages/dashboard";
 import CopyGenerator from "@/pages/copy-generator";
+import BriefGenerator from "@/pages/brief-generator";
 import CompetitorMonitor from "@/pages/competitor-monitor";
 import Settings from "@/pages/settings";
 import History from "@/pages/history";
@@ -20,6 +21,7 @@ function AppShell() {
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/copy-generator" component={CopyGenerator} />
+          <Route path="/brief-generator" component={BriefGenerator} />
           <Route path="/competitor-monitor" component={CompetitorMonitor} />
           <Route path="/history" component={History} />
           <Route path="/settings" component={Settings} />

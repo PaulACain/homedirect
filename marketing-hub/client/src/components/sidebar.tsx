@@ -5,12 +5,12 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/",                   label: "Dashboard",          icon: LayoutDashboard, live: true  },
   { href: "/copy-generator",     label: "Copy Generator",     icon: Sparkles,        live: true  },
-  { href: "/competitor-monitor", label: "Competitor Monitor", icon: Search,          live: false },
+  { href: "/brief-generator",    label: "Brief Generator",    icon: FileText,        live: true  },
+  { href: "/competitor-monitor", label: "Competitor Monitor", icon: Search,          live: true  },
   { href: "/history",            label: "Generation History", icon: History,         live: true  },
 ];
 
 const COMING_SOON = [
-  { label: "Brief Generator",   icon: FileText  },
   { label: "Performance Board", icon: BarChart2 },
 ];
 

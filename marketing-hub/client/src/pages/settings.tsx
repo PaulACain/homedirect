@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, CheckCircle2, XCircle, Terminal } from "lucide-react";
+import { Settings as SettingsIcon, CheckCircle2, XCircle, Terminal, Eye, EyeOff } from "lucide-react";
 
 const PROVIDERS = [
-  { value: "together",  label: "Together AI",  envVar: "TOGETHER_API_KEY",  defaultModel: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", docsUrl: "https://api.together.xyz/settings/api-keys" },
+  { value: "together",  label: "Together AI",  envVar: "TOGETHER_API_KEY",  defaultModel: "meta-llama/Llama-3.3-70B-Instruct-Turbo", docsUrl: "https://api.together.xyz/settings/api-keys" },
   { value: "openai",    label: "OpenAI",        envVar: "OPENAI_API_KEY",    defaultModel: "gpt-4o-mini",                                   docsUrl: "https://platform.openai.com/api-keys" },
   { value: "deepseek",  label: "DeepSeek",      envVar: "DEEPSEEK_API_KEY",  defaultModel: "deepseek-chat",                                 docsUrl: "https://platform.deepseek.com/api_keys" },
   { value: "fireworks", label: "Fireworks AI",  envVar: "FIREWORKS_API_KEY", defaultModel: "accounts/fireworks/models/llama-v3p1-8b-instruct", docsUrl: "https://fireworks.ai/account/api-keys" },
@@ -20,6 +20,8 @@ export default function Settings() {
   const qc = useQueryClient();
   const [provider, setProvider] = useState("together");
   const [model, setModel] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
 
   const { data: current } = useQuery({
     queryKey: ["/api/settings"],
@@ -34,7 +36,7 @@ export default function Settings() {
   }, [current]);
 
   const save = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/settings", { provider, model: model || undefined }).then(r => r.json()),
+    mutationFn: () => apiRequest("POST", "/api/settings", { provider, model: model || undefined, apiKey: apiKey || undefined }).then(r => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({ description: "Settings saved" });
@@ -108,6 +110,29 @@ FIREWORKS_API_KEY=your-key-here`
           <CardTitle className="text-sm">Active Provider</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* API Key input — used when no env var is set */}
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
+              API Key {current?.hasKey ? <span className="font-normal text-signal">(key saved — leave blank to keep)</span> : ""}
+            </label>
+            <div className="relative">
+              <Input
+                data-testid="input-api-key"
+                type={showKey ? "text" : "password"}
+                placeholder={current?.hasKey ? "••••••••••••••••" : `Paste your ${selectedProvider.label} key here`}
+                value={apiKey}
+                onChange={e => setApiKey(e.target.value)}
+                className="pr-10 font-mono text-sm h-9"
+              />
+              <button onClick={() => setShowKey(!showKey)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Stored securely in the database. For Railway deployments, use environment variables instead (they take priority).
+            </p>
+          </div>
+
           <div>
             <label className="text-xs font-semibold text-muted-foreground block mb-1.5">Provider</label>
             <Select value={provider} onValueChange={setProvider}>

@@ -20,17 +20,17 @@ const TOOLS = [
     icon: Search,
     label: "Competitor Monitor",
     description: "Weekly automated pull of Meta Ad Library + Google Ads Transparency on Zillow, Redfin, Opendoor, FSBO competitors. LLM digest.",
-    live: false,
+    live: true,
     accent: "text-teal",
     bg: "bg-[hsl(192,100%,50%)]/10 border-[hsl(192,100%,50%)]/20",
   },
   {
-    href: "#",
+    href: "/brief-generator",
     icon: FileText,
     label: "Brief Generator",
-    description: "Turn winning ad performance data into structured creative briefs for Canva, AdCreative.ai, and Creatify. Coming next.",
-    live: false,
-    accent: "text-gold",
+    description: "Turn copy output into production-ready creative briefs for Carousel, Reel/Video, and Static Ad formats. One-click export for Canva, AdCreative.ai, and Creatify.",
+    live: true,
+    accent: "text-[hsl(45,90%,61%)]",
     bg: "bg-[hsl(45,90%,61%)]/10 border-[hsl(45,90%,61%)]/20",
   },
   {
@@ -141,8 +141,8 @@ export default function Dashboard() {
         <div className="space-y-2">
           {[
             { label: "Copy Generator",       status: "live" },
-            { label: "Competitor Monitor",   status: "building" },
-            { label: "Brief Generator",      status: "queued" },
+            { label: "Competitor Monitor",   status: "live" },
+            { label: "Brief Generator",      status: "live" },
             { label: "Performance Board",    status: "queued" },
             { label: "Feedback Loop (Auto)", status: "queued" },
           ].map(({ label, status }) => (

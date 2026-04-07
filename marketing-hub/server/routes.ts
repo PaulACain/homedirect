@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
+import { runCompetitorMonitor } from "./competitor-monitor";
 
 // ── ICP Context (full brand + ICP data embedded) ──────────────────────────────
 
@@ -91,14 +92,15 @@ async function callLLM(systemPrompt: string, userPrompt: string, apiKey: string,
 // ── Env-based key resolution ─────────────────────────────────────────────────
 // API keys come from environment variables only — never stored in the database.
 // Set them in .env locally or in Railway's environment variable store.
+// Env var takes priority; falls back to DB-stored key (for Perplexity-hosted version)
 function resolveApiKey(provider: string): string | undefined {
-  const keyMap: Record<string, string> = {
+  const envMap: Record<string, string> = {
     together:  process.env.TOGETHER_API_KEY  || "",
     openai:    process.env.OPENAI_API_KEY    || "",
     deepseek:  process.env.DEEPSEEK_API_KEY  || "",
     fireworks: process.env.FIREWORKS_API_KEY || "",
   };
-  return keyMap[provider] || undefined;
+  return envMap[provider] || storage.getSetting("api_key")?.value || undefined;
 }
 
 export async function registerRoutes(_httpServer: Server, app: Express) {
@@ -119,9 +121,10 @@ export async function registerRoutes(_httpServer: Server, app: Express) {
   });
 
   app.post("/api/settings", (req, res) => {
-    const { provider, model } = req.body;
+    const { provider, model, apiKey } = req.body;
     if (provider !== undefined) storage.setSetting("provider", provider);
     if (model    !== undefined) storage.setSetting("model",    model);
+    if (apiKey   !== undefined && apiKey !== "") storage.setSetting("api_key", apiKey);
     res.json({ ok: true });
   });
 
@@ -141,7 +144,7 @@ export async function registerRoutes(_httpServer: Server, app: Express) {
     const modelSetting = storage.getSetting("model");
 
     const PROVIDERS: Record<string, { baseUrl: string; defaultModel: string }> = {
-      together:  { baseUrl: "https://api.together.xyz/v1",              defaultModel: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo" },
+      together:  { baseUrl: "https://api.together.xyz/v1",              defaultModel: "meta-llama/Llama-3.3-70B-Instruct-Turbo" },
       fireworks: { baseUrl: "https://api.fireworks.ai/inference/v1",     defaultModel: "accounts/fireworks/models/llama-v3p1-8b-instruct" },
       deepseek:  { baseUrl: "https://api.deepseek.com",                  defaultModel: "deepseek-chat" },
       openai:    { baseUrl: "https://api.openai.com/v1",                 defaultModel: "gpt-4o-mini" },
@@ -218,6 +221,196 @@ IMPORTANT: Respond with valid JSON only. No markdown, no explanation outside the
     } catch (err: any) {
       console.error("[Copy Gen] Error:", err.message);
       res.status(500).json({ error: err.message || "Generation failed" });
+    }
+  });
+
+  // ── Brief Generation ─────────────────────────────────────────────────────────
+  app.post("/api/generate-brief", async (req, res) => {
+    const { icp, format, copyInput } = req.body;
+
+    if (!icp || !["buyer", "seller", "concierge"].includes(icp)) {
+      return res.status(400).json({ error: "icp must be buyer | seller | concierge" });
+    }
+    if (!format || !["carousel", "reel", "static", "all"].includes(format)) {
+      return res.status(400).json({ error: "format must be carousel | reel | static | all" });
+    }
+    if (!copyInput) {
+      return res.status(400).json({ error: "copyInput is required" });
+    }
+
+    const provider = storage.getSetting("provider")?.value || "together";
+    const apiKey = resolveApiKey(provider);
+    if (!apiKey) {
+      return res.status(503).json({ error: `No API key found. Set ${provider.toUpperCase()}_API_KEY in your environment variables.` });
+    }
+    const modelSetting = storage.getSetting("model");
+
+    const PROVIDERS: Record<string, { baseUrl: string; defaultModel: string }> = {
+      together:  { baseUrl: "https://api.together.xyz/v1",              defaultModel: "meta-llama/Llama-3.3-70B-Instruct-Turbo" },
+      fireworks: { baseUrl: "https://api.fireworks.ai/inference/v1",     defaultModel: "accounts/fireworks/models/llama-v3p1-8b-instruct" },
+      deepseek:  { baseUrl: "https://api.deepseek.com",                  defaultModel: "deepseek-chat" },
+      openai:    { baseUrl: "https://api.openai.com/v1",                 defaultModel: "gpt-4o-mini" },
+    };
+
+    const { baseUrl, defaultModel } = PROVIDERS[provider] || PROVIDERS.together;
+    const model = modelSetting?.value || defaultModel;
+
+    const systemPrompt = `You are a creative director and production specialist for HomeDirectAI, an AI-powered real estate platform in Tampa Bay, FL.
+
+BRAND DESIGN SYSTEM:
+- Colors: Dark Slate Midnight (#0D1B2A) background, Forest Signal green (#00C47A) primary accent, Electric Teal (#00D4FF) secondary accent
+- Typography: Manrope Bold for headlines, Manrope Regular for body text
+- Tone: Direct, confident, data-forward. Real-person voice. No jargon.
+- Visual style: Dark, premium, high-contrast. Green/teal CTAs on dark backgrounds.
+
+${ICP_CONTEXT[icp]}
+
+IMPORTANT: Respond with valid JSON only. No markdown, no explanation outside the JSON. Ensure all JSON strings are properly escaped.`;
+
+    const formatsRequested = format === "all" ? ["carousel", "reel", "static"] : [format];
+
+    const copyContext = typeof copyInput === "string" ? copyInput : JSON.stringify(copyInput, null, 2);
+
+    const carouselPrompt = `
+Generate a 5-slide carousel creative brief using this copy input:
+${copyContext}
+
+Return ONLY this JSON (no other text):
+{
+  "carousel": {
+    "slideCount": 5,
+    "slides": [
+      {"slideNumber": 1, "role": "Hook", "headline": "...", "bodyText": "...", "visualDirection": "...", "textOverlay": "..."},
+      {"slideNumber": 2, "role": "Problem", "headline": "...", "bodyText": "...", "visualDirection": "...", "textOverlay": "..."},
+      {"slideNumber": 3, "role": "Proof", "headline": "...", "bodyText": "...", "visualDirection": "...", "textOverlay": "..."},
+      {"slideNumber": 4, "role": "Solution", "headline": "...", "bodyText": "...", "visualDirection": "...", "textOverlay": "..."},
+      {"slideNumber": 5, "role": "CTA", "headline": "...", "bodyText": "...", "visualDirection": "...", "textOverlay": "..."}
+    ],
+    "dimensions": "1080x1080px",
+    "fontRecommendation": "Manrope Bold for headlines, Manrope Regular for body",
+    "colorDirection": "Dark slate background (#0D1B2A), Forest Signal green (#00C47A) accents",
+    "musicMood": null
+  }
+}`;
+
+    const reelPrompt = `
+Generate a 30-second Reel/Video creative brief using this copy input:
+${copyContext}
+
+Return ONLY this JSON (no other text):
+{
+  "reel": {
+    "duration": "30s",
+    "hook": "...",
+    "scenes": [
+      {"timestamp": "0-3s", "visual": "...", "voiceover": "...", "textOverlay": "...", "action": "..."},
+      {"timestamp": "3-10s", "visual": "...", "voiceover": "...", "textOverlay": "...", "action": "..."},
+      {"timestamp": "10-20s", "visual": "...", "voiceover": "...", "textOverlay": "...", "action": "..."},
+      {"timestamp": "20-27s", "visual": "...", "voiceover": "...", "textOverlay": "...", "action": "..."},
+      {"timestamp": "27-30s", "visual": "CTA screen with green button", "voiceover": "...", "textOverlay": "...", "action": "Cut to brand end card"}
+    ],
+    "musicMood": "Upbeat, confident, modern — no lyrics",
+    "captionStyle": "Bold white text, bottom third, 3-5 words per line",
+    "dimensions": "1080x1920px (9:16)"
+  }
+}`;
+
+    const staticPrompt = `
+Generate a static ad creative brief using this copy input:
+${copyContext}
+
+Return ONLY this JSON (no other text):
+{
+  "static": {
+    "dimensions": "1200x628px (Facebook/Meta feed)",
+    "heroHeadline": "...",
+    "subheadline": "...",
+    "visualDirection": "...",
+    "ctaButton": "...",
+    "colorScheme": "Dark slate bg, green CTA button",
+    "copyPlacement": "Headline top-left, visual right 60%, CTA bottom-right",
+    "variants": [
+      {"name": "Variant A", "headline": "...", "visual": "..."},
+      {"name": "Variant B", "headline": "...", "visual": "..."}
+    ]
+  }
+}`;
+
+    try {
+      const results: Record<string, any> = {};
+
+      // Call LLM for each requested format
+      for (const fmt of formatsRequested) {
+        let prompt = "";
+        if (fmt === "carousel") prompt = carouselPrompt;
+        else if (fmt === "reel") prompt = reelPrompt;
+        else if (fmt === "static") prompt = staticPrompt;
+
+        const raw = await callLLM(systemPrompt, prompt, apiKey, baseUrl, model);
+        if (!raw) throw new Error(`LLM returned empty response for ${fmt}`);
+
+        const cleaned = raw.replace(/```json\n?|```/g, "").trim();
+        const parsed = JSON.parse(cleaned);
+        Object.assign(results, parsed);
+      }
+
+      // Save to history using context field to distinguish brief type
+      storage.saveGeneration({
+        icp,
+        angle: `brief:${format}`,
+        context: `type=brief format=${format}`,
+        result: JSON.stringify(results),
+        createdAt: Date.now(),
+      });
+
+      res.json(results);
+    } catch (err: any) {
+      console.error("[Brief Gen] Error:", err.message);
+      res.status(500).json({ error: err.message || "Brief generation failed" });
+    }
+  });
+
+  // ── Competitor Monitor ──────────────────────────────────────────────────────
+
+  // List tracked competitors
+  app.get("/api/competitor-monitor/competitors", (_req, res) => {
+    try {
+      const comps = storage.getCompetitors();
+      res.json(comps);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // List recent digests
+  app.get("/api/competitor-monitor/digests", (_req, res) => {
+    try {
+      const digests = storage.getAdDigests(20);
+      res.json(digests.map(d => ({
+        id: d.id,
+        generatedAt: d.generatedAt,
+        rawAdsCount: d.rawAdsCount,
+        summary: JSON.parse(d.summary),
+      })));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Trigger a new analysis
+  app.post("/api/competitor-monitor/run", async (_req, res) => {
+    const provider = storage.getSetting("provider")?.value || "together";
+    const apiKey = resolveApiKey(provider);
+    if (!apiKey) {
+      return res.status(503).json({ error: `No API key found. Set ${provider.toUpperCase()}_API_KEY in your environment variables.` });
+    }
+    const model = storage.getSetting("model")?.value || "";
+    try {
+      const result = await runCompetitorMonitor(apiKey, provider, model);
+      res.json(result);
+    } catch (err: any) {
+      console.error("[Competitor Monitor] Error:", err.message);
+      res.status(500).json({ error: err.message || "Analysis failed" });
     }
   });
 
