@@ -23,12 +23,14 @@ import PortalEscrow from "@/pages/portal-escrow";
 import PortalLender from "@/pages/portal-lender";
 import PortalAppraisal from "@/pages/portal-appraisal";
 import PortalTitle from "@/pages/portal-title";
+import PortalInsurance from "@/pages/portal-insurance";
 import EditListing from "@/pages/edit-listing";
 import AdminDashboard from "@/pages/admin";
 import ClosingPrep from "@/pages/closing-prep";
 import NotFound from "@/pages/not-found";
 import { AIAdvisor } from "@/components/ai-advisor";
 import ChaperoneApp from "@/pages/chaperone-app/index";
+import ProPortal from "@/pages/pro-portal/index";
 
 function AppRouter() {
   return (
@@ -47,6 +49,7 @@ function AppRouter() {
       <Route path="/transaction/:id/lender" component={PortalLender} />
       <Route path="/transaction/:id/appraisal" component={PortalAppraisal} />
       <Route path="/transaction/:id/title" component={PortalTitle} />
+      <Route path="/transaction/:id/insurance" component={PortalInsurance} />
       <Route path="/transaction/:id/closing-prep" component={ClosingPrep} />
       <Route path="/transaction/:id" component={TransactionHub} />
       <Route path="/edit-listing/:id" component={EditListing} />
@@ -57,10 +60,15 @@ function AppRouter() {
 }
 
 function ChaperoneAppRouteGuard() {
-  const [location] = useLocation();
+  const [location] = useHashLocation();
 
   if (location.startsWith("/chaperone-app")) {
     return <ChaperoneApp />;
+  }
+
+  if (location.startsWith("/pro/")) {
+    const token = location.replace("/pro/", "").split("/")[0];
+    return <ProPortal token={token} />;
   }
 
   return (
