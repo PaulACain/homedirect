@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HomeDirectAI — How Much Are You Leaving on the Table?</title>
+  <meta name="description" content="Tampa Bay sellers pay an average 5.4% commission. See exactly how much you keep when you sell with HomeDirectAI — 1% at closing, AI handles everything." />
+  <meta property="og:title" content="HomeDirectAI — Commission Savings Calculator" />
+  <meta property="og:description" content="See exactly how much you save vs. a traditional agent. AI handles negotiations, docs, and closing. You keep the rest." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── NAV ── -->
+  <header class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="#" class="nav__logo" aria-label="HomeDirectAI">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="var(--color-primary)"/>
+          <path d="M7 18L16 9L25 18" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 15.5V23.5H14.5V19.5H17.5V23.5H22V15.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="23.5" cy="10.5" r="2" fill="var(--color-gold)"/>
+        </svg>
+        <span class="nav__wordmark">HomeDirectAI</span>
+      </a>
+      <div class="nav__actions">
+        <button class="btn btn--ghost btn--sm" data-theme-toggle aria-label="Toggle dark mode">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <a href="#calculator" class="btn btn--primary btn--sm">Calculate My Savings</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ── HERO ── -->
+    <section class="hero" aria-label="Hero">
+      <div class="hero__eyebrow">Tampa Bay, FL · 1% Closing Fee · AI-Powered</div>
+      <h1 class="hero__headline">
+        How much are you<br>
+        <span class="hero__highlight">leaving on the table?</span>
+      </h1>
+      <p class="hero__sub">
+        The average Tampa Bay home seller pays&nbsp;<strong>$23,000+ in commissions.</strong>
+        HomeDirectAI charges 1%&nbsp;— AI handles negotiations, documents, and closing.
+        You keep the rest.
+      </p>
+      <a href="#calculator" class="btn btn--primary btn--lg hero__cta">
+        Calculate My Savings
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+      </a>
+      <div class="hero__proof">
+        <span class="proof__item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          No upfront costs
+        </span>
+        <span class="proof__sep" aria-hidden="true">·</span>
+        <span class="proof__item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          No agents required
+        </span>
+        <span class="proof__sep" aria-hidden="true">·</span>
+        <span class="proof__item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Pay 1% only if you close
+        </span>
+      </div>
+    </section>
+
+    <!-- ── NAR TRUTH BANNER ── -->
+    <section class="truth-banner" aria-label="NAR Settlement Context">
+      <div class="truth-banner__inner">
+        <div class="truth-banner__stat">
+          <span class="stat__num">49%</span>
+          <span class="stat__label">of sellers didn't know they were paying the buyer's agent too</span>
+        </div>
+        <div class="truth-banner__divider" aria-hidden="true"></div>
+        <div class="truth-banner__stat">
+          <span class="stat__num">67%</span>
+          <span class="stat__label">of sellers believe agents value profits over client interests</span>
+        </div>
+        <div class="truth-banner__divider" aria-hidden="true"></div>
+        <div class="truth-banner__stat">
+          <span class="stat__num">94%</span>
+          <span class="stat__label">of sellers support commission changes after the NAR settlement</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CALCULATOR ── -->
+    <section class="calc-section" id="calculator" aria-label="Savings Calculator">
+      <div class="calc-section__header">
+        <p class="section-eyebrow">Savings Calculator</p>
+        <h2 class="section-title">See your exact number</h2>
+        <p class="section-sub">Move the slider to your home's value. Watch what you keep.</p>
+      </div>
+
+      <div class="calc-card">
+
+        <!-- slider -->
+        <div class="calc-card__slider-group">
+          <div class="calc-card__slider-labels">
+            <label for="homeValue" class="calc-label">Your estimated home value</label>
+            <span class="calc-median">Tampa median: $430K</span>
+          </div>
+          <div class="calc-value" id="homeValueDisplay" aria-live="polite">$430,000</div>
+          <div class="slider-track-wrap">
+            <input
+              type="range"
+              id="homeValue"
+              class="slider"
+              min="150000"
+              max="1500000"
+              step="5000"
+              value="430000"
+              aria-label="Home value"
+            />
+          </div>
+          <div class="slider-range-labels">
+            <span>$150K</span>
+            <span>$1.5M</span>
+          </div>
+          <!-- presets -->
+          <div class="presets" role="group" aria-label="Quick select home values">
+            <button class="preset" data-value="280000">$280K</button>
+            <button class="preset preset--active" data-value="430000">$430K</button>
+            <button class="preset" data-value="550000">$550K</button>
+            <button class="preset" data-value="750000">$750K</button>
+          </div>
+        </div>
+
+        <!-- savings hero -->
+        <div class="savings-hero" aria-live="polite" aria-label="Your savings">
+          <p class="savings-hero__label">You save vs. a traditional agent</p>
+          <div class="savings-hero__amount" id="savingsAmount">$18,842</div>
+          <p class="savings-hero__sub" id="savingsSub">That's $23,220 in traditional fees vs. $4,300 with HomeDirectAI</p>
+        </div>
+
+        <!-- bar chart -->
+        <div class="comparison" aria-label="Fee comparison chart">
+          <h3 class="comparison__title">Fee comparison</h3>
+          <div class="comparison__bars">
+
+            <div class="bar-row">
+              <div class="bar-row__meta">
+                <span class="bar-label">Traditional Agent</span>
+                <span class="bar-fee bar-fee--high" id="fee-traditional">$23,220</span>
+              </div>
+              <div class="bar-track" role="progressbar" aria-label="Traditional agent fee bar">
+                <div class="bar-fill bar-fill--traditional" id="bar-traditional" style="width:100%"></div>
+              </div>
+              <span class="bar-rate">5.4% avg — Tampa Bay</span>
+            </div>
+
+            <div class="bar-row">
+              <div class="bar-row__meta">
+                <span class="bar-label">Redfin / Rocket</span>
+                <span class="bar-fee" id="fee-redfin">$6,450</span>
+              </div>
+              <div class="bar-track" role="progressbar" aria-label="Redfin fee bar">
+                <div class="bar-fill bar-fill--redfin" id="bar-redfin" style="width:28%"></div>
+              </div>
+              <span class="bar-rate">1.5%</span>
+            </div>
+
+            <div class="bar-row">
+              <div class="bar-row__meta">
+                <span class="bar-label">Houzeo</span>
+                <span class="bar-fee" id="fee-houzeo">$5,375</span>
+              </div>
+              <div class="bar-track" role="progressbar" aria-label="Houzeo fee bar">
+                <div class="bar-fill bar-fill--houzeo" id="bar-houzeo" style="width:23%"></div>
+              </div>
+              <span class="bar-rate">1.25% + upfront</span>
+            </div>
+
+            <div class="bar-row bar-row--hdai">
+              <div class="bar-row__meta">
+                <span class="bar-label bar-label--hdai">
+                  HomeDirectAI
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                <span class="bar-fee bar-fee--hdai" id="fee-hdai">$4,300</span>
+              </div>
+              <div class="bar-track" role="progressbar" aria-label="HomeDirectAI fee bar">
+                <div class="bar-fill bar-fill--hdai" id="bar-hdai" style="width:18%"></div>
+              </div>
+              <span class="bar-rate bar-rate--hdai">1% — lowest all-in cost</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- breakdown grid -->
+        <div class="breakdown" aria-label="Cost breakdown">
+          <div class="breakdown__cell breakdown__cell--save">
+            <span class="breakdown__chip">You keep</span>
+            <span class="breakdown__num breakdown__num--save" id="bd-savings">$18,842</span>
+            <span class="breakdown__desc">vs. paying a traditional agent</span>
+          </div>
+          <div class="breakdown__cell">
+            <span class="breakdown__chip breakdown__chip--muted">HomeDirectAI fee</span>
+            <span class="breakdown__num breakdown__num--cost" id="bd-hdai">−$4,300</span>
+            <span class="breakdown__desc">1% of sale price, paid at closing</span>
+          </div>
+          <div class="breakdown__cell">
+            <span class="breakdown__chip breakdown__chip--muted">Traditional fee</span>
+            <span class="breakdown__num breakdown__num--cost" id="bd-traditional">−$23,220</span>
+            <span class="breakdown__desc">5.4% avg · buyer + seller agent</span>
+          </div>
+          <div class="breakdown__cell">
+            <span class="breakdown__chip breakdown__chip--muted">Walkthroughs covered</span>
+            <span class="breakdown__num" id="bd-tours">942</span>
+            <span class="breakdown__desc">at $20/tour with your savings</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── HOW IT WORKS ── -->
+    <section class="how-section" aria-label="How it works">
+      <div class="how-section__header">
+        <p class="section-eyebrow">No agents. Just AI.</p>
+        <h2 class="section-title">What HomeDirectAI replaces</h2>
+      </div>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-card__icon how-card__icon--green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </div>
+          <h3 class="how-card__title">AI Negotiation Engine</h3>
+          <p class="how-card__body">Analyzes comps, market trends, and negotiation leverage to secure the best deal — without a human agent's commission incentive to close fast.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-card__icon how-card__icon--teal">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <h3 class="how-card__title">Full Document Generation</h3>
+          <p class="how-card__body">Purchase agreements, disclosures, title docs, inspection addenda — AI generates and routes every form. Review and e-sign from your dashboard.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-card__icon how-card__icon--gold">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          </div>
+          <h3 class="how-card__title">$20 Gig Walkthroughs</h3>
+          <p class="how-card__body">Need to show or tour a home? A background-checked local chaperone shows up on demand for $20. Like Uber for home tours — no appointment blocks.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-card__icon how-card__icon--green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <h3 class="how-card__title">Full Transaction Hub</h3>
+          <p class="how-card__body">Your deal lives in one dashboard — lender, title, escrow, inspection, and appraisal portals all connected. Track every milestone in real time.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ICP TRUTH SECTION ── -->
+    <section class="icp-section" aria-label="Who this is for">
+      <div class="icp-section__header">
+        <p class="section-eyebrow">Built for Tampa Bay</p>
+        <h2 class="section-title">Sound like you?</h2>
+      </div>
+      <div class="icp-grid">
+        <div class="icp-card">
+          <div class="icp-card__quote">"I built equity. I'm not giving $25,000 of it to someone who just put a lockbox on my door."</div>
+          <div class="icp-card__persona">
+            <div class="icp-card__dot icp-card__dot--1"></div>
+            <div>
+              <strong>Equity-Motivated Millennial Seller</strong>
+              <span>32–42, bought 2019–2022, Westchase / Wesley Chapel</span>
+            </div>
+          </div>
+        </div>
+        <div class="icp-card">
+          <div class="icp-card__quote">"I need to buy a home in Tampa remotely. I can't fly down every weekend to tour houses with an agent."</div>
+          <div class="icp-card__persona">
+            <div class="icp-card__dot icp-card__dot--2"></div>
+            <div>
+              <strong>Out-of-State Digital Relocator</strong>
+              <span>28–48, remote worker from NY/NJ/CA, relocating to Tampa Bay</span>
+            </div>
+          </div>
+        </div>
+        <div class="icp-card">
+          <div class="icp-card__quote">"Commission eats 25% of my gross profit on every flip. That's not a fee — it's a recurring tax on my business."</div>
+          <div class="icp-card__persona">
+            <div class="icp-card__dot icp-card__dot--3"></div>
+            <div>
+              <strong>Active Investor / House Flipper</strong>
+              <span>30–55, 2–10+ transactions/year, BiggerPockets mindset</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── OBJECTION HANDLING ── -->
+    <section class="objections-section" aria-label="Common questions">
+      <div class="objections-section__header">
+        <p class="section-eyebrow">We've heard the questions</p>
+        <h2 class="section-title">Honest answers</h2>
+      </div>
+      <div class="objections-grid">
+        <details class="objection">
+          <summary class="objection__q">
+            What if the AI gets my negotiation wrong?
+            <svg class="objection__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <p class="objection__a">Our AI models are trained on millions of transactions and real-time Tampa Bay comps. Every counter-offer comes with the data behind it — so you see exactly why we're recommending each move. You always review and approve before anything is submitted.</p>
+        </details>
+        <details class="objection">
+          <summary class="objection__q">
+            Is this even legal and compliant?
+            <svg class="objection__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <p class="objection__a">Yes. HomeDirectAI operates under a licensed real estate brokerage. All transactions follow Florida state law. Our document generation is reviewed by licensed real estate attorneys and updated with every regulatory change.</p>
+        </details>
+        <details class="objection">
+          <summary class="objection__q">
+            Won't the buyer's agent take advantage of me being unrepresented?
+            <svg class="objection__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <p class="objection__a">Our AI negotiation engine is purpose-built for this. It doesn't have a relationship with the buyer's agent, no incentive to close fast, and no fear of conflict. It analyzes the offer against current comps and recommends the optimal response — consistently.</p>
+        </details>
+        <details class="objection">
+          <summary class="objection__q">
+            What if something goes wrong at 10pm before closing?
+            <svg class="objection__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <p class="objection__a">Your transaction hub includes escalation pathways to licensed support — not a chatbot. Critical pre-closing issues are handled by real people backed by AI tools, not the reverse. You're never alone in your deal.</p>
+        </details>
+        <details class="objection">
+          <summary class="objection__q">
+            FSBO homes sell for less — won't this be the same?
+            <svg class="objection__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <p class="objection__a">This is the most important distinction: HomeDirectAI is not FSBO. FSBO homes sell for less because sellers negotiate alone, without data, and often panic. Our AI negotiation engine gives you the same comp analysis and strategic leverage a top agent would use — at 1% the cost.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ── FINAL CTA ── -->
+    <section class="final-cta" aria-label="Call to action">
+      <div class="final-cta__inner">
+        <p class="section-eyebrow final-cta__eyebrow">No commitment. No agents.</p>
+        <h2 class="final-cta__headline" id="cta-headline">
+          Keep <span class="final-cta__savings" id="cta-savings">$18,842</span> from your next sale.
+        </h2>
+        <p class="final-cta__sub">
+          AI handles negotiations, documents, and closing — on a $430,000 Tampa Bay home,
+          that's <strong>$18,842</strong> back in your pocket. Pay 1% only when the deal closes.
+        </p>
+        <div class="final-cta__buttons">
+          <a href="https://homedirect-hub-production.up.railway.app" class="btn btn--primary btn--xl">
+            Start My Home Sale
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+          <a href="https://homedirect-hub-production.up.railway.app/search" class="btn btn--outline btn--xl">Browse Listings</a>
+        </div>
+        <p class="final-cta__fine">1% fee paid at closing only · Tampa Bay, FL · No upfront cost</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a href="#" class="nav__logo" aria-label="HomeDirectAI home">
+          <svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="var(--color-primary)"/>
+            <path d="M7 18L16 9L25 18" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 15.5V23.5H14.5V19.5H17.5V23.5H22V15.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="23.5" cy="10.5" r="2" fill="#F5C842"/>
+          </svg>
+          <span class="nav__wordmark">HomeDirectAI</span>
+        </a>
+        <p class="footer__tagline">AI-powered real estate. 1% at closing. Tampa Bay, FL.</p>
+      </div>
+      <nav class="footer__links" aria-label="Footer navigation">
+        <a href="https://homedirect-hub-production.up.railway.app/sell">Sell Your Home</a>
+        <a href="https://homedirect-hub-production.up.railway.app/search">Browse Listings</a>
+        <a href="https://homedirect-hub-production.up.railway.app/chaperone-apply">Become a Chaperone</a>
+        <a href="#calculator">Savings Calculator</a>
+      </nav>
+    </div>
+    <div class="footer__bottom">
+      <span>© 2026 HomeDirectAI. All rights reserved.</span>
+      <span>Tampa Bay, FL · 1% closing fee · AI-powered transactions</span>
+    </div>
+  </footer>
+
+  <script src="calc.js"></script>
+  <script>
+    // ── Dark mode toggle ──
+    (function () {
+      const t = document.querySelector('[data-theme-toggle]');
+      const r = document.documentElement;
+      let d = r.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+      r.setAttribute('data-theme', d);
+      function updateIcon() {
+        if (!t) return;
+        t.innerHTML = d === 'dark'
+          ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+          : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        t.setAttribute('aria-label', 'Switch to ' + (d === 'dark' ? 'light' : 'dark') + ' mode');
+      }
+      updateIcon();
+      if (t) t.addEventListener('click', () => { d = d === 'dark' ? 'light' : 'dark'; r.setAttribute('data-theme', d); updateIcon(); });
+    })();
+
+    // ── Sticky nav shadow ──
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('nav--scrolled', window.scrollY > 10);
+    }, { passive: true });
+  </script>
+</body>
+</html>
