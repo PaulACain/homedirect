@@ -12,6 +12,16 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
+  // Serve savings calculator LP — public, no auth required
+  app.get(["/savings-calculator", "/savings-calculator/"], (_req, res) => {
+    const lpPath = path.resolve(distPath, "savings-calculator", "index.html");
+    if (fs.existsSync(lpPath)) {
+      res.sendFile(lpPath);
+    } else {
+      res.status(404).send("Savings calculator not found");
+    }
+  });
+
   // Serve chaperone app — same React app but with chaperone PWA manifest
   // Also serve at /driver (clean path the SW has never cached)
   app.get(["/chaperone-app", "/driver"], (_req, res) => {
