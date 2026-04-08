@@ -26,61 +26,89 @@ a { color: inherit; text-decoration: none; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
-/* ─── TOKENS ────────────────────────────────────────────────────── */
+/* ─── TOKENS — HomeDirectAI Official Brand System ─────────────── */
+/*
+  Slate Midnight  #0D1B2A  — primary BG (dark surfaces, headers, footers)
+  Forest Signal   #00C47A  — brand primary (all CTAs, links, brand accents)
+  Electric Teal   #00D4FF  — AI features only
+  Off-White       #F4F7F5  — light mode BG (warm, not clinical white)
+  Slate Gray      #6B7A8D  — body/muted text on light backgrounds
+  Savings Gold    #F5C842  — dollar amounts and savings highlights ONLY
+  Typography: Manrope 800 display · DM Sans 400/500 body
+*/
 :root, [data-theme="light"] {
-  --color-bg:              #F7F6F2;
-  --color-surface:         #FAFAF7;
-  --color-surface-2:       #FFFFFF;
-  --color-border:          #E2DFD8;
-  --color-text:            #0D1B2A;
-  --color-text-muted:      #5A6170;
-  --color-text-faint:      #9BA3AE;
-  --color-primary:         #00A966;   /* Forest Signal — brand green */
-  --color-primary-hover:   #008751;
-  --color-primary-bg:      #E8F8F1;
-  --color-primary-border:  #B3E8D0;
-  --color-teal:            #00BCD4;   /* Electric Teal — AI accent */
-  --color-gold:            #F5C842;   /* Savings Gold — money moments */
-  --color-gold-dark:       #C9940E;
-  --color-error:           #D94040;
-  --color-amber:           #E07B30;
-  --color-amber-bg:        #FEF3E8;
+  /* Surfaces — Off-White system */
+  --color-bg:              #F4F7F5;   /* Off-White — brand defined */
+  --color-surface:         #EDF2EF;   /* slightly deeper for section alt */
+  --color-surface-2:       #FFFFFF;   /* pure white for cards/inputs */
+  --color-border:          #C8D5CE;
+
+  /* Text — Slate Midnight family */
+  --color-text:            #0D1B2A;   /* Slate Midnight */
+  --color-text-muted:      #6B7A8D;   /* Slate Gray — brand defined */
+  --color-text-faint:      #9DAAB8;
+
+  /* Primary — Forest Signal #00C47A */
+  --color-primary:         #00C47A;
+  --color-primary-hover:   #00994F;
+  --color-primary-dim:     #00944d;
+  --color-primary-bg:      rgba(0, 196, 122, 0.10);
+  --color-primary-border:  rgba(0, 196, 122, 0.30);
+
+  /* AI Accent — Electric Teal */
+  --color-teal:            #00D4FF;
+  --color-teal-dim:        #00A8CC;
+
+  /* Money moments — Savings Gold */
+  --color-gold:            #F5C842;
+  --color-gold-dark:       #C8970A;
+
+  /* System colors */
+  --color-error:           #E53535;
   --color-dark-bg:         #0D1B2A;   /* Slate Midnight */
+  --color-dark-2:          #142233;   /* midnight-2 */
+  --color-dark-3:          #1A2D42;   /* midnight-3 */
+
+  /* Typography */
   --font-display:          'Manrope', system-ui, sans-serif;
   --font-body:             'DM Sans', system-ui, sans-serif;
+
   --radius-sm:   4px;
   --radius-md:   8px;
   --radius-lg:   12px;
   --radius-xl:   20px;
   --radius-full: 9999px;
-  --shadow-sm:   0 1px 3px rgba(13,27,42,.06), 0 1px 2px rgba(13,27,42,.04);
-  --shadow-md:   0 4px 16px rgba(13,27,42,.08), 0 2px 6px rgba(13,27,42,.05);
-  --shadow-lg:   0 12px 40px rgba(13,27,42,.12), 0 4px 12px rgba(13,27,42,.06);
+  --shadow-sm:   0 1px 3px rgba(13,27,42,.07), 0 1px 2px rgba(13,27,42,.04);
+  --shadow-md:   0 4px 16px rgba(13,27,42,.09), 0 2px 6px rgba(13,27,42,.05);
+  --shadow-lg:   0 12px 40px rgba(13,27,42,.13), 0 4px 12px rgba(13,27,42,.07);
   --trans:       180ms cubic-bezier(0.16, 1, 0.3, 1);
   --content:     1080px;
 }
 [data-theme="dark"] {
-  --color-bg:              #0D1B2A;
-  --color-surface:         #121F2E;
-  --color-surface-2:       #172434;
-  --color-border:          #1E2D3E;
-  --color-text:            #E8EDF2;
-  --color-text-muted:      #7A8FA6;
-  --color-text-faint:      #3D5268;
-  --color-primary:         #00C47A;
-  --color-primary-hover:   #00A966;
-  --color-primary-bg:      #0A2218;
-  --color-primary-border:  #0F3D2A;
+  /* Dark mode — Slate Midnight as the base */
+  --color-bg:              #0D1B2A;   /* Slate Midnight */
+  --color-surface:         #142233;   /* midnight-2 */
+  --color-surface-2:       #1A2D42;   /* midnight-3 */
+  --color-border:          #1E3555;
+  --color-text:            #F4F7F5;   /* Off-White on dark */
+  --color-text-muted:      #9DAAB8;
+  --color-text-faint:      #4A5C70;
+  --color-primary:         #00C47A;   /* Forest Signal stays constant */
+  --color-primary-hover:   #00E890;
+  --color-primary-dim:     #00944d;
+  --color-primary-bg:      rgba(0, 196, 122, 0.12);
+  --color-primary-border:  rgba(0, 196, 122, 0.25);
   --color-teal:            #00D4FF;
+  --color-teal-dim:        #00A8CC;
   --color-gold:            #F5C842;
-  --color-gold-dark:       #D4A010;
-  --color-error:           #FF6B6B;
-  --color-amber:           #F59E50;
-  --color-amber-bg:        #1E1208;
-  --color-dark-bg:         #060D14;
-  --shadow-sm:   0 1px 3px rgba(0,0,0,.25);
-  --shadow-md:   0 4px 16px rgba(0,0,0,.35);
-  --shadow-lg:   0 12px 40px rgba(0,0,0,.5);
+  --color-gold-dark:       #F5C842;
+  --color-error:           #FC8181;
+  --color-dark-bg:         #060E17;
+  --color-dark-2:          #0D1B2A;
+  --color-dark-3:          #142233;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,.30);
+  --shadow-md:   0 4px 16px rgba(0,0,0,.42);
+  --shadow-lg:   0 12px 40px rgba(0,0,0,.58);
 }
 
 /* ─── BUTTONS ───────────────────────────────────────────────────── */
@@ -463,6 +491,119 @@ a { color: inherit; text-decoration: none; }
 .breakdown__desc {
   font-size: clamp(0.7rem, 0.65rem + 0.15vw, 0.78rem);
   color: var(--color-text-muted);
+}
+
+/* ─── BROWSE LISTINGS SECTION ───────────────────────────────────────── */
+.browse-section {
+  padding: clamp(64px, 9vw, 112px) 24px;
+  background: var(--color-dark-bg);
+}
+[data-theme="dark"] .browse-section { background: #060D14; }
+.browse-section__inner {
+  max-width: var(--content); margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 64px; align-items: center;
+}
+.browse-section__title {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(1.8rem, 1.2rem + 2.5vw, 3rem);
+  letter-spacing: -0.03em; color: #fff;
+  line-height: 1.1; margin-bottom: 14px;
+}
+.browse-section__sub {
+  font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.05rem);
+  color: rgba(255,255,255,.5); max-width: 44ch;
+  line-height: 1.65; margin-bottom: 32px;
+}
+.browse-section__actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* listing card grid */
+.browse-section__cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.mock-listing {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  transition: transform var(--trans), box-shadow var(--trans);
+}
+[data-theme="dark"] .mock-listing { background: #172434; border-color: #1E2D3E; }
+.mock-listing:hover { transform: translateY(-3px); box-shadow: 0 20px 48px rgba(0,0,0,.35); }
+.mock-listing--offset { margin-top: 28px; }
+.mock-listing__img {
+  width: 100%; aspect-ratio: 4/3;
+  background-size: cover; background-position: center;
+  position: relative;
+}
+.mock-listing__img--1 { background: linear-gradient(135deg, #0D2B1E 0%, #1E4D32 100%); }
+.mock-listing__img--2 { background: linear-gradient(135deg, #0D1E2B 0%, #1E3D4D 100%); }
+.mock-listing__img--3 { background: linear-gradient(135deg, #1E1D0D 0%, #3A3820 100%); }
+.mock-listing__img::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 80'%3E%3Cg fill='rgba(255,255,255,0.1)'%3E%3Cpolygon points='20,50 60,15 100,50'/%3E%3Crect x='30' y='50' width='60' height='30'/%3E%3Crect x='50' y='60' width='20' height='20' fill='rgba(255,255,255,0.05)'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 75%; background-position: center; background-repeat: no-repeat;
+}
+.mock-listing__body {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px 4px;
+}
+.mock-listing__price {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(0.9rem, 0.86rem + 0.18vw, 1rem);
+  color: var(--color-text); letter-spacing: -0.02em;
+}
+[data-theme="dark"] .mock-listing__price { color: #E8EDF2; }
+.mock-listing__tag {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+  border: 1px solid var(--color-primary-border);
+  padding: 3px 9px; border-radius: var(--radius-full);
+}
+[data-theme="dark"] .mock-listing__tag { background: rgba(0,196,122,.1); border-color: rgba(0,196,122,.2); }
+.mock-listing__addr {
+  padding: 0 14px 2px;
+  font-size: clamp(0.74rem, 0.7rem + 0.14vw, 0.82rem);
+  color: var(--color-text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+[data-theme="dark"] .mock-listing__addr { color: rgba(255,255,255,.4); }
+.mock-listing__meta {
+  padding: 0 14px 10px;
+  font-size: clamp(0.68rem, 0.64rem + 0.13vw, 0.75rem);
+  color: var(--color-text-faint);
+}
+[data-theme="dark"] .mock-listing__meta { color: rgba(255,255,255,.22); }
+.mock-listing__tour {
+  display: flex; align-items: center; gap: 6px;
+  margin: 0 12px 12px;
+  padding: 7px 14px;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius-full);
+  font-family: var(--font-display); font-weight: 600;
+  font-size: clamp(0.68rem, 0.64rem + 0.13vw, 0.75rem);
+  text-decoration: none;
+  transition: background var(--trans), transform var(--trans);
+  width: fit-content;
+}
+.mock-listing__tour:hover { background: var(--color-primary-hover); transform: scale(1.02); }
+
+@media (max-width: 860px) {
+  .browse-section__inner { grid-template-columns: 1fr; gap: 40px; }
+  .browse-section__cards { grid-template-columns: repeat(3, 1fr); }
+  .mock-listing--offset { margin-top: 0; }
+}
+@media (max-width: 540px) {
+  .browse-section__cards { grid-template-columns: 1fr; }
+  .browse-section__cards .mock-listing:nth-child(3) { display: none; }
 }
 
 /* ─── HOW IT WORKS ───────────────────────────────────────────────── */
